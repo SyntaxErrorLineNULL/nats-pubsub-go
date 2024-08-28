@@ -17,9 +17,9 @@ func NewPublisher(conn *nats.Conn) *Publisher {
 // any message fails to be published. If no messages are provided, it returns an
 // ErrInvalidArgument indicating invalid input.
 func (p *Publisher) Publish(messages ...*nats.Msg) error {
-	// Check if the messages slice is nil. If so, return an error indicating invalid arguments.
+	// Check if the messages slice is empty or nil. If so, return an error indicating invalid arguments.
 	// This handles the case where no messages are provided or an improper call is made.
-	if messages == nil {
+	if messages == nil || len(messages) == 0 {
 		return ErrInvalidArgument
 	}
 
