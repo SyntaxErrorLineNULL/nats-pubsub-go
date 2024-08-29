@@ -1,12 +1,14 @@
 package nats_pubsub_go
 
 import (
-	"github.com/nats-io/nats.go"
 	"time"
+
+	"github.com/nats-io/nats.go"
 )
 
 type Publisher struct {
-	conn *nats.Conn
+	conn    *nats.Conn
+	isClose bool
 }
 
 func NewPublisher(conn *nats.Conn) *Publisher {
@@ -32,6 +34,12 @@ func (p *Publisher) Publish(messages ...*nats.Msg) error {
 		if err := p.conn.PublishMsg(msg); err != nil {
 			return err
 		}
+	}
+
+	// Flush any buffered messages to the NATS server to ensure they are sent immediately.
+	// This helps confirm that all published messages are transmitted without delay.
+	if err := p.conn.Flush(); err != nil {
+		return err
 	}
 
 	// If all messages are successfully published, return nil to indicate success.
