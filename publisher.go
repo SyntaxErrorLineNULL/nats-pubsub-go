@@ -6,12 +6,25 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
+// Publisher is a structure that encapsulates a NATS connection and provides
+// methods to publish messages to a NATS server. It also tracks whether the
+// publisher has been closed to prevent further operations after closure.
 type Publisher struct {
-	conn    *nats.Conn
+	// conn holds the connection to the NATS server.
+	// This connection is used to publish messages.
+	conn *nats.Conn
+
+	// isClose is a flag indicating whether the Publisher has been closed.
+	// Once set to true, the Publisher should not allow further publishing.
 	isClose bool
 }
 
+// NewPublisher creates and returns a new instance of Publisher.
+// It takes a *nats.Conn as an argument, which represents the active connection
+// to the NATS server that the Publisher will use for sending messages.
 func NewPublisher(conn *nats.Conn) *Publisher {
+	// Initialize a new Publisher with the provided NATS connection.
+	// The isClose flag is set to false by default, indicating the Publisher is active.
 	return &Publisher{conn: conn}
 }
 
