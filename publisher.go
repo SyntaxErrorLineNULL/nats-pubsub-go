@@ -2,6 +2,7 @@ package nats_pubsub_go
 
 import (
 	"github.com/nats-io/nats.go"
+	"time"
 )
 
 type Publisher struct {
@@ -36,4 +37,27 @@ func (p *Publisher) Publish(messages ...*nats.Msg) error {
 	// If all messages are successfully published, return nil to indicate success.
 	// This means no errors occurred during the publishing process.
 	return nil
+}
+
+// Request sends a message request using the NATS connection and waits for a response
+// within the specified timeout period. It ensures that the message is not nil before
+// attempting to send the request. If the request is successful, it returns the
+// response message; otherwise, it returns an error.
+func (p *Publisher) Request(message *nats.Msg, timeout time.Duration) (*nats.Msg, error) {
+	// Check if the provided message is nil. If it is, return an ErrInvalidArgument error.
+	// This prevents attempting to send a nil message, which would result in a runtime panic.
+	if message == nil {
+		return nil, ErrInvalidArgument
+	}
+
+	// Send the request message using the NATS connection and wait for a response.
+	// The response will be received within the specified timeout period.
+	// If the request fails, return the error to the caller.
+	msg, err := p.conn.RequestMsg(message, timeout)
+	if err != nil {
+		return nil, err
+	}
+
+	// If the request is successful, return the received response message.
+	return msg, nil
 }
