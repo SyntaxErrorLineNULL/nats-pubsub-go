@@ -114,4 +114,46 @@ func TestSubscriber(t *testing.T) {
 		// This verifies that the method returns the correct type of error for the given invalid argument.
 		assert.ErrorIs(t, err, pubsub.ErrInvalidArgument, "Expected error to be ErrInvalidArgument when subscribing with an empty subject")
 	})
+
+	// SuccessSyncSubscribe tests the behavior of the SyncSubscribe method
+	// when creating a synchronous subscription and receiving a published message.
+	// It verifies that the subscription correctly receives and processes messages
+	// published to the specified subject.
+	t.Run("SuccessSyncSubscribe", func(t *testing.T) {
+		// Define the subject for the message to be published.
+		// The subject acts as a channel or topic to which the message will be sent.
+		subject := "test.sync.subject"
+		// Define the payload for the message to be published.
+		// The payload is the actual data or content of the message that will be sent to the subject.
+		payload := []byte("test payload")
+
+		// Create a synchronous subscription to the defined subject using the subscriber instance.
+		// The SyncSubscribe method sets up a subscription that waits for messages on the given subject.
+		// It returns a MessageHandler and any error encountered during subscription setup.
+		sub, subErr := subscriber.SyncSubscribe(subject)
+		// Assert that no error occurred while creating the synchronous subscription.
+		// This ensures that the subscription was established successfully.
+		assert.NoError(t, subErr, "Expected no error when subscribing to the subject")
+
+		// Publish a message to the subject to test if the subscription receives it.
+		// The message should match the expected message defined above.
+		publishErr := natsConnection.Publish(subject, payload)
+		// Assert that no error occurred while publishing the message.
+		// This confirms that the message was sent successfully.
+		assert.NoError(t, publishErr, "Expected no error when publishing to the subject")
+
+		// Retrieve the next message from the subscription with a timeout of 10 milliseconds.
+		// This checks if the message was successfully published and received within the given time frame.
+		msg, errMsg := sub.ReceiveMessage(10 * time.Millisecond)
+		// Assert that there was no error in receiving the message.
+		// If no message is received within the timeout or another error occurs, this assertion will fail.
+		assert.NoError(t, errMsg, "failed to receive message")
+
+		// Assert that the subject of the received message matches the expected subject.
+		// This ensures that the message was published to and received from the correct channel.
+		assert.Equal(t, subject, msg.Subject, "expected subject to match")
+		// Assert that the payload of the received message matches the expected payload.
+		// This confirms that the correct data was transmitted without alteration or loss.
+		assert.Equal(t, payload, msg.Data, "expected payload to match")
+	})
 }
