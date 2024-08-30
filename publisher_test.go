@@ -120,4 +120,84 @@ func TestPublisher(t *testing.T) {
 		// and returns an error for the invalid input scenario (nil message).
 		assert.ErrorIs(t, err, ErrInvalidArgument, "expected ErrInvalidArgument for nil message")
 	})
+
+	// SuccessfulRequest tests the behavior of the Request method in the Publisher.
+	// It verifies that a request message can be sent and that a response message is received
+	// correctly within the expected time frame. The test ensures that the system under test (SUT)
+	// is capable of handling request-response interactions as expected.
+	t.Run("SuccessfulRequest", func(t *testing.T) {
+		// Define the subject for the message to be published.
+		// The subject acts as a channel or topic to which the message will be sent.
+		// In this test, the subject is set to "test.subject".
+		subject := "test.subject"
+
+		// Create a buffered channel with a capacity of 1, which will be used to signal when the response is received.
+		// The channel `resCh` is of type `chan struct{}`, which is commonly used for signaling without carrying any data.
+		resCh := make(chan struct{}, 1)
+
+		// Ensure that the channel `resCh` is closed when the test function exits.
+		// `defer close(resCh)` schedules the closing of the channel to happen after the function completes,
+		// which helps in cleaning up resources and avoiding potential memory leaks.
+		defer close(resCh)
+
+		// Define the expected request message to be sent to the PubSub system.
+		// This byte slice represents the data that should be sent with the request message.
+		expectedRequestMessage := []byte("test_request")
+
+		// Define the expected publish message that should be received in response to the request.
+		// This byte slice represents the data that the publisher should send as a reply.
+		expectedPublishMessage := []byte("test_publish")
+
+		// Subscribe to the subject using the NATS connection.
+		// This simulates a service that listens for the request and sends back a response.
+		_, _ = natsConnection.Subscribe(subject, func(msg *nats.Msg) {
+			// Verify that the received message data matches the expected request message.
+			// `assert.Equal` checks if `msg.Data` (the data in the received message) is equal to `expectedRequestMessage`.
+			// If the values are not equal, the test will fail, and the provided message will be displayed.
+			assert.Equal(t, expectedRequestMessage, msg.Data, "received message does not match expected")
+
+			// Publish the expected response message to the reply subject specified in the incoming message.
+			// The `msg.Reply` field contains the subject where the response should be sent.
+			// `expectedPublishMessage` is the data payload that will be sent as the response.
+			err = natsConnection.Publish(msg.Reply, expectedPublishMessage)
+
+			// Check if there was an error while attempting to publish the response message.
+			// The `assert.NoError` function ensures that the publish operation was successful.
+			// If an error occurred, the test will fail, and the provided message will be displayed.
+			assert.NoError(t, err, "failed to publish response message")
+
+			// Signal that the response has been published by sending a value to the result channel (resCh).
+			resCh <- struct{}{}
+		})
+
+		// Send a request message to the NATS server using the `publisher.Request` method.
+		// The request message is constructed with the specified `subject` and `expectedRequestMessage` data.
+		// A timeout of 1 second is provided for the request, meaning the request will wait up to 1 second for a response.
+		response, err := publisher.Request(&nats.Msg{Subject: subject, Data: expectedRequestMessage}, 1*time.Second)
+		// Check if the `publisher.Request` method returned an error.
+		// The `assert.NoError` function verifies that `err` is nil. If `err` is not nil (indicating an error occurred),
+		// the test will fail, and the provided message ("failed to send request message") will be displayed.
+		assert.NoError(t, err, "failed to send request message")
+
+		// Use a select statement to handle multiple cases: receiving a response or timing out.
+		select {
+		// Case when a response message is received on the `resCh` channel.
+		// The response channel `resCh` is signaled when the expected publish message is received.
+		case <-resCh:
+			// Assert that the data in the received response message matches the expected publish message.
+			// The `assert.Equal` function compares `expectedPublishMessage` with `response.Data` to ensure they are equal.
+			// If they do not match, the test will fail with the provided message.
+			assert.Equal(t, expectedPublishMessage, response.Data, "received message does not match expected")
+
+			// Exit the loop and the test since the expected response has been successfully received and validated.
+			return
+
+		// Case when the timeout duration (5 seconds) is reached without receiving a response.
+		// The `<-time.After(5 * time.Second)` statement waits for 5 seconds and then proceeds.
+		case <-time.After(5 * time.Second):
+			// Fail the test with a timeout error if no response was received within the 5-second window.
+			// The `t.Fatal` function logs the provided message and stops the test execution.
+			t.Fatal("Timed out waiting for message")
+		}
+	})
 }
