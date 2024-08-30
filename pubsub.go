@@ -27,3 +27,14 @@ type Publisher interface {
 	// any operation is attempted after closure.
 	Close()
 }
+
+type Subscriber interface {
+}
+
+type MessageHandler interface {
+	Unsubscribe() error
+
+	ReceiveMessage(timeout time.Duration) (*nats.Msg, error)
+
+	GetMessage() chan *nats.Msg
+}
