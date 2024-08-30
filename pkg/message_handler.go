@@ -46,8 +46,6 @@ func (msg *MessageHandler) Unsubscribe() (err error) {
 		// Unsubscribe from the current subscription to stop receiving messages.
 		// The Unsubscribe method call removes the subscription and cleans up resources.
 		err = msg.Subscription.Unsubscribe()
-		// Return the error if Unsubscribe() failed.
-		return
 	})
 
 	// Return any error encountered during the Unsubscribe process.
