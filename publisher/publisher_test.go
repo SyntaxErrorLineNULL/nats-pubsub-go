@@ -1,11 +1,12 @@
-package nats_pubsub_go
+package publisher
 
 import (
-	"github.com/nats-io/nats.go"
 	"testing"
 	"time"
 
+	"github.com/SyntaxErrorLineNULL/nats-pubsub-go"
 	"github.com/SyntaxErrorLineNULL/nats-pubsub-go/test"
+	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -55,7 +56,7 @@ func TestPublisher(t *testing.T) {
 		// Assert that the error returned is of type ErrInvalidArgument.
 		// This verifies that the specific error indicating invalid arguments is returned.
 		// The assertion confirms that the method is behaving as expected when encountering nil input.
-		assert.ErrorIs(t, err, ErrInvalidArgument, "expected ErrInvalidArgument due to nil message")
+		assert.ErrorIs(t, err, nats_pubsub_go.ErrInvalidArgument, "expected ErrInvalidArgument due to nil message")
 	})
 
 	// SuccessfulPublish tests the ability of the `Publish` method to successfully publish a message to a specified subject.
@@ -118,7 +119,7 @@ func TestPublisher(t *testing.T) {
 		// Assert that the error returned by the `Request` method is of type
 		// `ErrInvalidArgument`. This verifies that the method correctly identifies
 		// and returns an error for the invalid input scenario (nil message).
-		assert.ErrorIs(t, err, ErrInvalidArgument, "expected ErrInvalidArgument for nil message")
+		assert.ErrorIs(t, err, nats_pubsub_go.ErrInvalidArgument, "expected ErrInvalidArgument for nil message")
 	})
 
 	// SuccessfulRequest tests the behavior of the Request method in the Publisher.
@@ -199,5 +200,42 @@ func TestPublisher(t *testing.T) {
 			// The `t.Fatal` function logs the provided message and stops the test execution.
 			t.Fatal("Timed out waiting for message")
 		}
+	})
+
+	// Close tests the behavior of the Publisher's Close method. It verifies that the
+	// Close method correctly marks the Publisher as closed and prevents further
+	// publishing operations by ensuring that an appropriate error is returned when
+	// attempting to publish after the Publisher has been closed.
+	t.Run("Close", func(t *testing.T) {
+		// Create a new Publisher instance using a mock NATS connection.
+		// This sets up a Publisher that can be tested for its closing behavior.
+		closePublish := NewPublisher(natsConnection)
+		// Assert that the Publisher instance is not nil to ensure that it was created successfully.
+		assert.NotNil(t, closePublish, "Expected Publisher instance to be created successfully")
+
+		// Call the Close method on the Publisher instance to mark it as closed
+		// and to close the underlying NATS connection. This simulates the action of
+		// terminating the Publisher's activity.
+		_ = closePublish.Close()
+
+		// Assert that the isClose flag is set to true after calling Close.
+		// This confirms that the Publisher has been marked as closed and no further
+		// publishing operations should be allowed.
+		assert.True(t, closePublish.isClose, "Expected Publisher to be marked as closed")
+
+		// Attempt to publish a message using the now-closed Publisher.
+		// This should fail because the Publisher's connection has been closed.
+		err = closePublish.Publish(&nats.Msg{Subject: "close-method"})
+
+		// Assert that an error is returned when attempting to publish with a closed Publisher.
+		// This verifies that the Close method correctly prevents further publishing operations
+		// and returns an appropriate error when the Publisher is closed.
+		assert.Error(t, err, "Expected error when publishing with a closed Publisher")
+
+		// Assert that the error returned is of type ErrCloseConnection.
+		// This checks that the specific error returned when trying to publish with a closed Publisher
+		// is the expected ErrCloseConnection error. This ensures that the Publisher correctly handles
+		// the situation where an operation is attempted after it has been closed.
+		assert.ErrorIs(t, err, nats_pubsub_go.ErrCloseConnection, "Expected error to be ErrCloseConnection when publishing with a closed Publisher")
 	})
 }

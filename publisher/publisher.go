@@ -1,8 +1,9 @@
-package nats_pubsub_go
+package publisher
 
 import (
 	"time"
 
+	"github.com/SyntaxErrorLineNULL/nats-pubsub-go"
 	"github.com/nats-io/nats.go"
 )
 
@@ -37,13 +38,13 @@ func (p *Publisher) Publish(messages ...*nats.Msg) error {
 	// This prevents publishing when the Publisher is in a closed state, ensuring
 	// no operations are performed on a closed instance.
 	if p.isClose {
-		return ErrCloseConnection
+		return nats_pubsub_go.ErrCloseConnection
 	}
 
 	// Check if the messages slice is empty or nil. If so, return an error indicating invalid arguments.
 	// This handles the case where no messages are provided or an improper call is made.
 	if messages == nil || len(messages) == 0 {
-		return ErrInvalidArgument
+		return nats_pubsub_go.ErrInvalidArgument
 	}
 
 	// Iterate over each message in the messages slice.
@@ -75,13 +76,13 @@ func (p *Publisher) Request(message *nats.Msg, timeout time.Duration) (*nats.Msg
 	// Check if the Publisher is closed. If it is, return an ErrCloseConnection error.
 	// This prevents sending requests when the Publisher is in a closed state.
 	if p.isClose {
-		return nil, ErrCloseConnection
+		return nil, nats_pubsub_go.ErrCloseConnection
 	}
 
 	// Check if the provided message is nil. If it is, return an ErrInvalidArgument error.
 	// This prevents attempting to send a nil message, which would result in a runtime panic.
 	if message == nil {
-		return nil, ErrInvalidArgument
+		return nil, nats_pubsub_go.ErrInvalidArgument
 	}
 
 	// Send the request message using the NATS connection and wait for a response.
