@@ -156,4 +156,31 @@ func TestSubscriber(t *testing.T) {
 		// This confirms that the correct data was transmitted without alteration or loss.
 		assert.Equal(t, payload, msg.Data, "expected payload to match")
 	})
+
+	// AsyncQueueSubscribeInvalidArguments tests the behavior of the AsyncQueueSubscribe method
+	// when provided with invalid arguments. It verifies that the method correctly handles
+	// cases where either the subject or queue is empty, returning the appropriate error.
+	t.Run("AsyncQueueSubscribeInvalidArguments", func(t *testing.T) {
+		// Attempt to subscribe to a queue with an empty subject and a valid queue name "q".
+		// This simulates an invalid input scenario where the subject is missing, which is
+		// expected to result in an error.
+		_, err = subscriber.AsyncQueueSubscribe("", "q")
+		// Assert that an error was returned when attempting to subscribe with an empty subject.
+		// The test expects an error to be returned in this scenario.
+		assert.Error(t, err, "Expected error when subscribing with an empty subject")
+		// Assert that the specific error returned matches pubsub.ErrInvalidArgument.
+		// This ensures that the method correctly identifies the empty subject as an invalid argument.
+		assert.ErrorIs(t, err, pubsub.ErrInvalidArgument, "Expected error to be ErrInvalidArgument when subscribing with an empty subject")
+
+		// Attempt to subscribe to a queue with a valid subject "s" but an empty queue name.
+		// This simulates an invalid input scenario where the queue name is missing, which is
+		// also expected to result in an error.
+		_, err = subscriber.AsyncQueueSubscribe("s", "")
+		// Assert that an error was returned when attempting to subscribe with an empty queue name.
+		// The test expects an error to be returned in this case.
+		assert.Error(t, err, "Expected error when subscribing with an empty queue name")
+		// Assert that the specific error returned matches pubsub.ErrInvalidArgument.
+		// This ensures that the method correctly identifies the empty queue name as an invalid argument.
+		assert.ErrorIs(t, err, pubsub.ErrInvalidArgument, "Expected error to be ErrInvalidArgument when subscribing with an empty queue name")
+	})
 }
