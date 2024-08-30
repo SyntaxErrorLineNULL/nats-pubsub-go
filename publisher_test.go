@@ -100,4 +100,24 @@ func TestPublisher(t *testing.T) {
 		// This confirms that the correct data was transmitted without alteration or loss.
 		assert.Equal(t, payload, msg.Data, "expected payload to match")
 	})
+
+	// RequestEmptyMessage tests the behavior of the Request method when it is called
+	// with a nil message. It verifies that the method returns the appropriate error
+	// when the input is invalid, specifically ensuring that an empty message results
+	// in an ErrInvalidArgument error being returned.
+	t.Run("RequestEmptyMessage", func(t *testing.T) {
+		// Call the `Request` method on the publisher instance with a nil message
+		// and a timeout of 0. This tests how the method handles a nil message,
+		// which is considered an invalid argument.
+		_, err = publisher.Request(nil, 0)
+
+		// Assert that an error is returned, as the method should not accept a nil message.
+		// This check ensures that the function correctly identifies and rejects invalid input.
+		assert.Error(t, err, "Expected an error when calling Request with a nil message")
+
+		// Assert that the error returned by the `Request` method is of type
+		// `ErrInvalidArgument`. This verifies that the method correctly identifies
+		// and returns an error for the invalid input scenario (nil message).
+		assert.ErrorIs(t, err, ErrInvalidArgument, "expected ErrInvalidArgument for nil message")
+	})
 }
