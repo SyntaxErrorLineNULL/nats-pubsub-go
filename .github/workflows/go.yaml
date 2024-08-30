@@ -46,4 +46,4 @@ jobs:
           args: --timeout=10m
 
       - name: Test
-        run: 'make test'
+        run: go test -v ./..
