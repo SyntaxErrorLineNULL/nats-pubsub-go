@@ -226,4 +226,42 @@ func TestSubscriber(t *testing.T) {
 			t.Fatal("Timed out waiting for message")
 		}
 	})
+
+	// Unsubscribe tests the behavior of the Unsubscribe method
+	// to ensure that a subscription can be properly unsubscribed
+	// and that the data channel is closed accordingly.
+	t.Run("Unsubscribe", func(t *testing.T) {
+		// Define the subject for the message to be subscribed.
+		// The subject acts as a channel or topic to which the message will be sent.
+		// In this test, the subject is set to "test.subject".
+		subject := "test_unsubscribe_subject"
+		// Define the queue name for the subscription.
+		// This specifies the queue group to which messages will be delivered.
+		queue := "test_queue"
+
+		// Create an asynchronous queue subscription with the defined subject and queue.
+		// This sets up the subscription to listen for messages on the specified subject and queue.
+		subscription, errSub := subscriber.AsyncQueueSubscribe(subject, queue)
+		// Assert that no error occurred during the subscription setup.
+		// This ensures that the subscription was created successfully.
+		assert.NoError(t, errSub, "Expected no error when creating queue subscription")
+
+		// Assert that the data channel is not nil after subscription.
+		// This confirms that the subscription has an active channel for receiving messages.
+		assert.NotNil(t, subscription.GetMessage(), "data channel is nil after subscription")
+
+		// Call the Unsubscribe method on the subscription.
+		// This should remove the subscription from the NATS server and close the data channel.
+		errUnsubscribe := subscription.Unsubscribe()
+		// Assert that no error occurred during the unsubscription process.
+		// This ensures that the Unsubscribe method completed successfully.
+		assert.NoError(t, errUnsubscribe, "failed to unsubscribe")
+
+		// Attempt to receive from the data channel after unsubscribing.
+		// This checks if the data channel has been closed as expected.
+		_, ok := <-subscription.GetMessage()
+		// Assert that the data channel is closed after unsubscribing.
+		// The channel should be closed, so this assertion ensures that no more messages can be received.
+		assert.False(t, ok, "data channel is not closed after unsubscribe")
+	})
 }
