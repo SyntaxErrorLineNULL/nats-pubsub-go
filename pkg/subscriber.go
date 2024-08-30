@@ -5,6 +5,9 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
+// Subscriber represents a subscription to a NATS server.
+// It includes the connection to the server and a flag indicating whether
+// the Subscriber has been closed.
 type Subscriber struct {
 	// conn holds the connection to the NATS server.
 	// This connection is used to publish messages.
@@ -15,7 +18,12 @@ type Subscriber struct {
 	isClose bool
 }
 
+// NewSubscriber creates a new Subscriber instance with the given NATS connection.
+// It initializes the Subscriber with the provided connection and sets the
+// isClose flag to false, indicating that the Subscriber is open for operations.
 func NewSubscriber(conn *nats.Conn) *Subscriber {
+	// Return a pointer to a new Subscriber instance initialized with the provided connection.
+	// The isClose flag is initialized to its zero value, which is false.
 	return &Subscriber{conn: conn}
 }
 
@@ -80,4 +88,41 @@ func (s *Subscriber) SyncSubscribe(subject string) (pubsub.MessageHandler, error
 	// The MessageHandler struct embeds the actual subscription object and provides
 	// additional methods or properties for managing the subscription lifecycle or processing messages.
 	return &MessageHandler{Subscription: sub}, nil
+}
+
+// AsyncQueueSubscribe creates a new subscription to the specified NATS subject and queue.
+// It returns a Subscription object or an error if the subject or queue is empty.
+// The Subscribe method registers a callback function to handle incoming messages asynchronously.
+func (s *Subscriber) AsyncQueueSubscribe(subject, queue string) (pubsub.MessageHandler, error) {
+	// Check if the provided subject or queue is empty.
+	// An empty subject or queue is invalid and cannot be subscribed to.
+	// Return an ErrInvalidArgument error to indicate the issue.
+	if subject == "" || queue == "" {
+		return nil, pubsub.ErrInvalidArgument
+	}
+
+	// Create a channel to receive incoming messages asynchronously.
+	// This channel will be used to pass messages from the NATS subscription callback
+	// to the code that is using the subscription.
+	messages := make(chan *nats.Msg)
+
+	// Attempt to create a queue subscription to the provided subject and queue group.
+	// The QueueSubscribe method from the NATS library establishes a subscription where
+	// multiple subscribers can share the load of message processing.
+	sub, err := s.conn.QueueSubscribe(subject, queue, func(msg *nats.Msg) {
+		// When a message is received on the subscription, it is sent to the messages channel.
+		messages <- msg
+	})
+
+	// Check if an error occurred during the subscription setup.
+	// If an error is returned, it indicates that the subscription could not be created.
+	// Return nil for the Subscription and the encountered error to signal failure.
+	if err != nil {
+		return nil, err
+	}
+
+	// If the subscription is created successfully, return a MessageHandler with
+	// the messages channel and the subscription object.
+	// The MessageHandler allows receiving messages from the subscription asynchronously.
+	return &MessageHandler{Message: messages, Subscription: sub}, nil
 }
