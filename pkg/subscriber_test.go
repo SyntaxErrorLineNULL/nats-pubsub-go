@@ -35,7 +35,7 @@ func TestSubscriber(t *testing.T) {
 	// This check ensures that the NewSubscriber function was successful in creating a valid Subscriber instance.
 	// If `subscriber` is nil, it indicates a failure in the creation process, which would mean the setup is not correct.
 	// The message provided in the assert statement will be displayed if the `subscriber` is found to be nil.
-	assert.NotNil(t, subscriber)
+	assert.NotNil(t, subscriber, "Expected Subscriber instance to be created successfully")
 
 	// SubscribeInvalidArguments tests the behavior of the AsyncSubscribe method
 	// when an invalid argument (an empty subject) is provided. It verifies that
