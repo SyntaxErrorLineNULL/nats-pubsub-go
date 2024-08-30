@@ -183,4 +183,47 @@ func TestSubscriber(t *testing.T) {
 		// This ensures that the method correctly identifies the empty queue name as an invalid argument.
 		assert.ErrorIs(t, err, pubsub.ErrInvalidArgument, "Expected error to be ErrInvalidArgument when subscribing with an empty queue name")
 	})
+
+	// SuccessfulQueueSubscription tests the behavior of the AsyncQueueSubscribe method
+	// when valid arguments are provided. It verifies that the method can successfully
+	// subscribe to a queue, receive a message, and handle it correctly.
+	t.Run("SuccessfulQueueSubscription", func(t *testing.T) {
+		// Define the subject for the message to be subscribed.
+		// The subject acts as a channel or topic to which the message will be sent.
+		// In this test, the subject is set to "test.subject".
+		subject := "test_subscribe_subject"
+		// Define the expected message to be published.
+		// This message should match what is later received by the subscription.
+		expectedMessage := []byte("test_message")
+		// Define the queue name for the subscription.
+		// This specifies the queue group to which messages will be delivered.
+		queue := "test_queue"
+
+		// Create an asynchronous queue subscription with the defined subject and queue.
+		// This sets up the subscription to listen for messages on the specified subject and queue.
+		subscription, err := subscriber.AsyncQueueSubscribe(subject, queue)
+		// Assert that no error occurred during the subscription setup.
+		// This ensures that the subscription was created successfully.
+		assert.NoError(t, err, "Expected no error when creating queue subscription")
+
+		// Publish a message to the defined subject.
+		// This message will be sent to the specified subject and should be received by the subscription.
+		err = natsConnection.Publish(subject, expectedMessage)
+		// Assert that no error occurred while publishing the message.
+		// This confirms that the message was sent successfully to the NATS server.
+		assert.NoError(t, err, "Failed to publish message")
+
+		// Wait for the message to be received by the subscription.
+		// The select statement will either receive the message from the subscription or timeout after 2 seconds.
+		select {
+		case receivedMessage := <-subscription.GetMessage():
+			// Assert that the received message data matches the expected message.
+			// This confirms that the message received by the subscription is correct.
+			assert.Equal(t, expectedMessage, receivedMessage.Data, "Received message does not match expected")
+		case <-time.After(2 * time.Second): // Timeout
+			// Fail the test if no message was received within the timeout period.
+			// This ensures that the test will fail if the message is not received in a timely manner.
+			t.Fatal("Timed out waiting for message")
+		}
+	})
 }
