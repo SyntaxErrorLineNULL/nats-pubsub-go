@@ -97,4 +97,21 @@ func TestSubscriber(t *testing.T) {
 			t.Fatal("Timed out waiting for message")
 		}
 	})
+
+	// SyncSubscribeInvalidArguments tests the behavior of the SyncSubscribe method
+	// when an invalid argument (an empty subject) is provided. It verifies that
+	// the method returns an appropriate error indicating the issue with the argument.
+	t.Run("SyncSubscribeInvalidArguments", func(t *testing.T) {
+		// Attempt to call SyncSubscribe with an empty subject string.
+		// This simulates an invalid subscription request to test how the method handles such cases.
+		_, err = subscriber.SyncSubscribe("")
+
+		// Assert that an error is returned when calling SyncSubscribe with an empty subject.
+		// This checks if the method correctly identifies and handles the invalid input.
+		assert.Error(t, err, "Expected an error when subscribing with an empty subject")
+
+		// Assert that the specific error returned is ErrInvalidArgument.
+		// This verifies that the method returns the correct type of error for the given invalid argument.
+		assert.ErrorIs(t, err, pubsub.ErrInvalidArgument, "Expected error to be ErrInvalidArgument when subscribing with an empty subject")
+	})
 }
