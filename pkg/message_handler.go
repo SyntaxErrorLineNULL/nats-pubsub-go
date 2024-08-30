@@ -69,3 +69,11 @@ func (msg *MessageHandler) ReceiveMessage(timeout time.Duration) (*nats.Msg, err
 	// This means the message was successfully retrieved within the specified timeout.
 	return nextMessage, nil
 }
+
+// GetMessage retrieves the channel for received messages from the subscription.
+// It returns a channel through which messages can be received.
+// Note: If the SyncSubscribe method is used, the channel will default to nil.
+func (msg *MessageHandler) GetMessage() chan *nats.Msg {
+	// Return the channel for received messages
+	return msg.Message
+}
