@@ -28,13 +28,59 @@ type Publisher interface {
 	Close()
 }
 
+// Subscriber defines an interface for managing various types of subscriptions to NATS subjects.
+// It supports both synchronous and asynchronous subscriptions, with or without queue groups,
+// allowing for flexible message handling strategies.
 type Subscriber interface {
+	// AsyncSubscribe creates an asynchronous subscription to a specified subject.
+	// This method sets up a subscription that does not block the caller; instead, it allows
+	// the caller to continue processing while messages are received in the background.
+	// It returns a MessageHandler for managing the subscription and receiving messages, and
+	// an error if there was an issue creating the subscription.
+	AsyncSubscribe(subject string) (MessageHandler, error)
+
+	// SyncSubscribe creates a synchronous subscription to a specified subject.
+	// This method sets up a blocking subscription that will wait until a message is received.
+	// The caller will be blocked until a message arrives or an error occurs.
+	// It returns a MessageHandler for managing the subscription and receiving messages, and
+	// an error if there was an issue creating the subscription.
+	SyncSubscribe(subject string) (MessageHandler, error)
+
+	// AsyncQueueSubscribe creates an asynchronous subscription to a specified subject and queue group.
+	// Messages published to the subject will be distributed among the members of the queue group
+	// in a round-robin fashion, providing load balancing for message processing.
+	// This method sets up the subscription to listen for messages in a non-blocking manner.
+	// It returns a MessageHandler for managing the subscription and receiving messages, and
+	// an error if there was an issue creating the subscription.
+	AsyncQueueSubscribe(subject, queue string) (MessageHandler, error)
+
+	// SyncQueueSubscribe creates a synchronous subscription to a specified subject and queue group.
+	// This method sets up a blocking subscription where messages are distributed among the queue
+	// group members, with the caller being blocked until a message is received or an error occurs.
+	// It returns a MessageHandler for managing the subscription and receiving messages, and
+	// an error if there was an issue creating the subscription.
+	SyncQueueSubscribe(subject, queue string) (MessageHandler, error)
 }
 
+// MessageHandler defines methods for handling and managing messages from a subscription.
+// It provides functionality to receive messages, manage subscription lifecycle, and interact
+// with the message channel.
 type MessageHandler interface {
+	// Unsubscribe stops receiving messages from the subscription and closes the connection
+	// to the NATS server for this subscription. This method ensures that resources associated
+	// with the subscription are properly released. It returns an error if there was an issue
+	// during the unsubscription process.
 	Unsubscribe() error
 
+	// ReceiveMessage waits for a message to arrive on the subscription channel within the
+	// specified timeout period. If a message arrives within the timeout, it is returned
+	// along with any error that occurred. If the timeout elapses without receiving a message,
+	// this method will return an error indicating a timeout.
 	ReceiveMessage(timeout time.Duration) (*nats.Msg, error)
 
+	// GetMessage returns a channel through which messages from the subscription are received.
+	// The channel will provide messages asynchronously as they arrive, allowing the caller
+	// to process messages as they come in. This method does not block and provides a way
+	// to continuously receive messages in a non-blocking manner.
 	GetMessage() chan *nats.Msg
 }
