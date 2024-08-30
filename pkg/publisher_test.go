@@ -239,3 +239,73 @@ func TestPublisher(t *testing.T) {
 		assert.ErrorIs(t, err, nats_pubsub_go.ErrCloseConnection, "Expected error to be ErrCloseConnection when publishing with a closed Publisher")
 	})
 }
+
+func FuzzPublisher(f *testing.F) {
+	// Seed the fuzzer with an initial, valid input.
+	f.Add("test.subject", []byte("test payload"))
+
+	f.Fuzz(func(t *testing.T, subject string, payload []byte) {
+		// Start a mock NATS server for testing purposes
+		err := test.InitNats()
+		// Assert that the NATS server started without errors
+		assert.NoError(t, err, "Expected no error when starting NATS server")
+		// Ensure the NATS server is properly shut down after tests
+		defer test.ShutdownNatsServer()
+
+		// Get the NATS connection from the global state
+		natsConnection := test.GetNatsConnection()
+		// Assert that the NATS connection is initialized correctly
+		assert.NotNil(t, natsConnection, "Expected the NATS connection to be initialized, but got nil")
+		// Ensure the NATS connection is properly closed after tests
+		// defer natsConnection.Close()
+
+		// Create a new Publisher instance using the provided NATS connection.
+		// This step initializes the Publisher object with the necessary connection
+		// for publishing a messages.
+		publisher := NewPublisher(natsConnection)
+
+		// Assert that the Publisher instance is not nil.
+		// This checks that the `NewPublisher` function returned a valid object and did not
+		// encounter any errors or fail during initialization.
+		// The test will fail if `Publisher` is nil, indicating that the initialization
+		// did not succeed as expected.
+		assert.NotNil(t, publisher, "expected Publisher instance to be initialized and not nil")
+
+		// Edge Case: Check if the subject is empty. NATS subjects should not be empty.
+		if subject == "" {
+			// Expect the Publish to fail with an invalid argument error due to the empty subject.
+			err = publisher.Publish(&nats.Msg{Subject: subject, Data: payload})
+			assert.Error(t, err, "Expected an error due to empty subject")
+			assert.ErrorIs(t, err, nats_pubsub_go.ErrInvalidArgument, "Expected ErrInvalidArgument due to empty subject")
+			return
+		}
+
+		// Edge Case: Check for nil payload. Since fuzzing provides a byte slice, it won't be nil, but it could be empty.
+		// We check how the system handles an empty payload.
+		if len(payload) == 0 {
+			// Empty payload is technically valid in NATS, so ensure no errors occur.
+			err = publisher.Publish(&nats.Msg{Subject: subject, Data: payload})
+			assert.NoError(t, err, "Expected no error for an empty payload")
+			return
+		}
+
+		// Subscribe to the subject using the NATS connection, allowing us to receive the message.
+		sub, errSub := natsConnection.SubscribeSync(subject)
+		assert.NoError(t, errSub, "Failed to subscribe to the subject")
+
+		// Publish the message to the specified subject using the Publisher's Publish method.
+		err = publisher.Publish(&nats.Msg{Subject: subject, Data: payload})
+		assert.NoError(t, err, "Failed to publish message")
+
+		// Retrieve the next message from the subscription with a timeout of 10 milliseconds.
+		msg, errMsg := sub.NextMsg(10 * time.Millisecond)
+
+		// Check if the message was received. Since we're fuzzing, we tolerate cases where messages
+		// might not be received due to invalid inputs; hence, no assert is used here.
+		if errMsg == nil {
+			// If a message was received, assert that the subject and payload match the expected values.
+			assert.Equal(t, subject, msg.Subject, "Expected subject to match")
+			assert.Equal(t, payload, msg.Data, "Expected payload to match")
+		}
+	})
+}

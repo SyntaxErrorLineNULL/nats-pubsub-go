@@ -43,7 +43,7 @@ func (p *Publisher) Publish(messages ...*nats.Msg) error {
 
 	// Check if the messages slice is empty or nil. If so, return an error indicating invalid arguments.
 	// This handles the case where no messages are provided or an improper call is made.
-	if messages == nil || len(messages) == 0 {
+	if len(messages) == 0 {
 		return nats_pubsub_go.ErrInvalidArgument
 	}
 
