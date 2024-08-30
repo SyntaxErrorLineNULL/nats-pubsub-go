@@ -35,7 +35,7 @@ func (s *Subscriber) AsyncSubscribe(subject string) (pubsub.MessageHandler, erro
 	// Check if the provided subject is empty.
 	// An empty subject is invalid and cannot be subscribed to.
 	// Return an ErrInvalidArgument error to indicate the issue.
-	if len(subject) == 0 {
+	if subject == "" {
 		return nil, pubsub.ErrInvalidArgument
 	}
 
@@ -68,7 +68,7 @@ func (s *Subscriber) SyncSubscribe(subject string) (pubsub.MessageHandler, error
 	// Check if the provided subject is empty.
 	// An empty subject is invalid and cannot be subscribed to.
 	// Return an ErrInvalidArgument error to indicate the issue.
-	if len(subject) == 0 {
+	if subject == "" {
 		return nil, pubsub.ErrInvalidArgument
 	}
 
@@ -152,4 +152,27 @@ func (s *Subscriber) SyncQueueSubscribe(subject, queue string) (pubsub.MessageHa
 	// If the subscription is successfully created, wrap it in a MessageHandler struct and return it.
 	// The MessageHandler struct includes the actual subscription object and can be used to receive messages.
 	return &MessageHandler{Subscription: sub}, nil
+}
+
+// Close terminates the connection associated with the Subscriber and marks it as closed.
+// It ensures that any ongoing communication with the NATS server is properly finalized and
+// resources are released. This method should be called when the Subscriber is no longer needed
+// to prevent resource leaks and ensure graceful shutdown.
+func (s *Subscriber) Close() error {
+	// Mark the Subscriber as closed by setting the isClose flag to true.
+	// This flag indicates that the Subscriber is no longer active and should not
+	// allow further message subscriptions or publications.
+	s.isClose = true
+
+	// Attempt to drain any remaining messages from the NATS connection.
+	// The Drain method ensures that all pending messages are processed before closing the connection.
+	// If an error occurs during this process, it is returned to signal that the connection
+	// could not be properly closed.
+	if err := s.conn.Drain(); err != nil {
+		return err
+	}
+
+	// Return nil to indicate that the connection was successfully closed.
+	// If no errors occurred during the draining process, the Subscriber is now safely closed.
+	return nil
 }
