@@ -233,7 +233,6 @@ func TestSubscriber(t *testing.T) {
 	t.Run("Unsubscribe", func(t *testing.T) {
 		// Define the subject for the message to be subscribed.
 		// The subject acts as a channel or topic to which the message will be sent.
-		// In this test, the subject is set to "test.subject".
 		subject := "test_unsubscribe_subject"
 		// Define the queue name for the subscription.
 		// This specifies the queue group to which messages will be delivered.
@@ -263,5 +262,50 @@ func TestSubscriber(t *testing.T) {
 		// Assert that the data channel is closed after unsubscribing.
 		// The channel should be closed, so this assertion ensures that no more messages can be received.
 		assert.False(t, ok, "data channel is not closed after unsubscribe")
+	})
+
+	// GetData tests the behavior of retrieving messages from a queue subscription.
+	// It verifies that a message published to a subject is correctly received
+	// through the queue subscription.
+	t.Run("GetData", func(t *testing.T) {
+		// Define the subject for the message to be subscribed.
+		// The subject acts as a channel or topic to which the message will be sent.
+		// In this test, the subject is set to "test_subject1".
+		subject := "test_subject1"
+
+		// Define the queue name for the subscription.
+		// This specifies the queue group to which messages will be delivered.
+		// In this test, the queue is named "test_queue1".
+		queue := "test_queue1"
+
+		// Create an asynchronous queue subscription with the defined subject and queue.
+		// This sets up the subscription to listen for messages on the specified subject and queue.
+		subscription, errSub := subscriber.AsyncQueueSubscribe(subject, queue)
+		// Assert that no error occurred during the subscription setup.
+		// This ensures that the subscription was created successfully and is ready to receive messages.
+		assert.NoError(t, errSub, "Expected no error when creating queue subscription")
+
+		// Ensure that the subscription is unsubscribed after the test completes.
+		// This cleans up resources and avoids potential interference with other tests.
+		defer subscription.Unsubscribe()
+
+		// Define the expected message to be published.
+		// This is the message that should be received through the subscription.
+		expectedMessage := []byte("test_message")
+
+		// Publish a message to the subject.
+		// This sends the expected message to the subject so that the subscription can receive it.
+		errPublish := natsConnection.Publish(subject, expectedMessage)
+		// Assert that no error occurred while publishing the message.
+		// This ensures that the message was sent successfully.
+		assert.NoError(t, errPublish, "Failed to publish message")
+
+		// Receive a message from the subscription's data channel.
+		// This retrieves the next message received by the subscription.
+		receivedMessage := <-subscription.GetMessage()
+
+		// Assert that the received message data matches the expected message.
+		// This verifies that the message published was correctly received by the subscription.
+		assert.Equal(t, expectedMessage, receivedMessage.Data, "received message does not match expected")
 	})
 }
