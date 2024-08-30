@@ -1,8 +1,9 @@
 package pkg
 
 import (
-	"github.com/nats-io/nats.go"
 	"sync"
+
+	"github.com/nats-io/nats.go"
 )
 
 // MessageHandler manages the subscription to NATS messages and
@@ -23,4 +24,31 @@ type MessageHandler struct {
 	// It uses sync.Once to guarantee that specific actions, such as closing
 	// the channel and unsubscribing, are executed only a single time.
 	once sync.Once
+}
+
+// Unsubscribe terminates the subscription and closes the data channel.
+// It ensures that the channel is closed only once and that the subscription
+// is properly unsubscribed from. This method helps clean up resources
+// and prevent memory leaks or dangling subscriptions.
+func (msg *MessageHandler) Unsubscribe() (err error) {
+	// Ensure the Data channel is closed only once by using the sync.Once mechanism.
+	// The sync.Once type ensures that the provided function is executed only once,
+	// regardless of how many times it's called.
+	msg.once.Do(func() {
+		// Check if the Message channel is not nil before attempting to close it.
+		// This prevents potential panics or runtime errors when trying to close a nil channel.
+		if msg.Message != nil {
+			// Close the Message channel to stop receiving any further messages.
+			close(msg.Message)
+		}
+
+		// Unsubscribe from the current subscription to stop receiving messages.
+		// The Unsubscribe method call removes the subscription and cleans up resources.
+		err = msg.Subscription.Unsubscribe()
+		// Return the error if Unsubscribe() failed.
+		return
+	})
+
+	// Return any error encountered during the Unsubscribe process.
+	return err
 }
