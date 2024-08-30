@@ -28,11 +28,18 @@ func NewPublisher(conn *nats.Conn) *Publisher {
 	return &Publisher{conn: conn}
 }
 
-// Publish sends one or more NATS messages to the connected NATS server.
-// It takes a variadic number of *nats.Msg objects and returns an error if
-// any message fails to be published. If no messages are provided, it returns an
-// ErrInvalidArgument indicating invalid input.
+// Publish sends one or more messages using the NATS connection. It checks for
+// the Publisher's state and validates the provided messages before attempting
+// to publish them. It ensures all messages are sent and handles any errors
+// encountered during the process.
 func (p *Publisher) Publish(messages ...*nats.Msg) error {
+	// Check if the Publisher is closed. If it is, return an ErrCloseConnection error.
+	// This prevents publishing when the Publisher is in a closed state, ensuring
+	// no operations are performed on a closed instance.
+	if p.isClose {
+		return ErrCloseConnection
+	}
+
 	// Check if the messages slice is empty or nil. If so, return an error indicating invalid arguments.
 	// This handles the case where no messages are provided or an improper call is made.
 	if messages == nil || len(messages) == 0 {
@@ -65,6 +72,12 @@ func (p *Publisher) Publish(messages ...*nats.Msg) error {
 // attempting to send the request. If the request is successful, it returns the
 // response message; otherwise, it returns an error.
 func (p *Publisher) Request(message *nats.Msg, timeout time.Duration) (*nats.Msg, error) {
+	// Check if the Publisher is closed. If it is, return an ErrCloseConnection error.
+	// This prevents sending requests when the Publisher is in a closed state.
+	if p.isClose {
+		return nil, ErrCloseConnection
+	}
+
 	// Check if the provided message is nil. If it is, return an ErrInvalidArgument error.
 	// This prevents attempting to send a nil message, which would result in a runtime panic.
 	if message == nil {
@@ -86,7 +99,14 @@ func (p *Publisher) Request(message *nats.Msg, timeout time.Duration) (*nats.Msg
 // Close terminates the Publisher instance, marking it as closed and
 // closing the underlying NATS connection. This method ensures that
 // no further publishing can occur and that resources are properly released.
-func (p *Publisher) Close() {
+func (p *Publisher) Close() error {
+	// Check if the Publisher is already closed. If it is, return immediately
+	// to avoid redundant operations and potential errors. This prevents
+	// attempting to close an already closed connection.
+	if p.isClose {
+		return nil
+	}
+
 	// Set the isClose flag to true, indicating that the Publisher is closed.
 	// This flag can be used to prevent further publishing operations.
 	p.isClose = true
@@ -94,4 +114,7 @@ func (p *Publisher) Close() {
 	// Close the underlying NATS connection. This releases any resources associated
 	// with the connection and ensures that the Publisher is properly shut down.
 	p.conn.Close()
+
+	// Note: Important point, when implementing Close, others may return an error.
+	return nil
 }
