@@ -100,12 +100,12 @@ func (p *Publisher) Request(message *nats.Msg, timeout time.Duration) (*nats.Msg
 // Close terminates the Publisher instance, marking it as closed and
 // closing the underlying NATS connection. This method ensures that
 // no further publishing can occur and that resources are properly released.
-func (p *Publisher) Close() error {
+func (p *Publisher) Close() {
 	// Check if the Publisher is already closed. If it is, return immediately
 	// to avoid redundant operations and potential errors. This prevents
 	// attempting to close an already closed connection.
 	if p.isClose {
-		return nil
+		return
 	}
 
 	// Set the isClose flag to true, indicating that the Publisher is closed.
@@ -115,7 +115,4 @@ func (p *Publisher) Close() error {
 	// Close the underlying NATS connection. This releases any resources associated
 	// with the connection and ensures that the Publisher is properly shut down.
 	p.conn.Close()
-
-	// Note: Important point, when implementing Close, others may return an error.
-	return nil
 }

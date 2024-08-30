@@ -216,7 +216,7 @@ func TestPublisher(t *testing.T) {
 		// Call the Close method on the Publisher instance to mark it as closed
 		// and to close the underlying NATS connection. This simulates the action of
 		// terminating the Publisher's activity.
-		_ = closePublish.Close()
+		closePublish.Close()
 
 		// Assert that the isClose flag is set to true after calling Close.
 		// This confirms that the Publisher has been marked as closed and no further
