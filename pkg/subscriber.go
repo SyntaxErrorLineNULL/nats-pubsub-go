@@ -126,3 +126,30 @@ func (s *Subscriber) AsyncQueueSubscribe(subject, queue string) (pubsub.MessageH
 	// The MessageHandler allows receiving messages from the subscription asynchronously.
 	return &MessageHandler{Message: messages, Subscription: sub}, nil
 }
+
+// SyncQueueSubscribe subscribes to a NATS subject with a queue group in a synchronous manner.
+// This means it will block until a message is received from the subject within the specified queue group.
+// It returns a MessageHandler to manage the subscription and receive messages.
+func (s *Subscriber) SyncQueueSubscribe(subject, queue string) (pubsub.MessageHandler, error) {
+	// Check if the provided subject or queue is empty.
+	// An empty subject or queue is invalid and cannot be subscribed to.
+	// Return an ErrInvalidArgument error to indicate the issue.
+	if subject == "" || queue == "" {
+		return nil, pubsub.ErrInvalidArgument
+	}
+
+	// Attempt to create a synchronous queue subscription to the provided subject and queue using the NATS connection.
+	// The QueueSubscribeSync method from the NATS library is used to establish a blocking subscription
+	// that will wait for messages to arrive at the given subject within the specified queue group.
+	sub, err := s.conn.QueueSubscribeSync(subject, queue)
+	// Check for errors that occurred during the subscription attempt.
+	// If an error is returned, it indicates that the subscription could not be created.
+	// Return nil for the subscription and the error to signal failure.
+	if err != nil {
+		return nil, err
+	}
+
+	// If the subscription is successfully created, wrap it in a MessageHandler struct and return it.
+	// The MessageHandler struct includes the actual subscription object and can be used to receive messages.
+	return &MessageHandler{Subscription: sub}, nil
+}
