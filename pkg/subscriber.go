@@ -52,3 +52,32 @@ func (s *Subscriber) AsyncSubscribe(subject string) (pubsub.MessageHandler, erro
 	// messages asynchronously.
 	return &MessageHandler{Message: messages, Subscription: sub}, nil
 }
+
+// SyncSubscribe creates a synchronous subscription to the provided subject,
+// returning a MessageHandler that can be used to receive messages. It validates
+// the subject and ensures proper error handling for subscription issues.
+func (s *Subscriber) SyncSubscribe(subject string) (pubsub.MessageHandler, error) {
+	// Check if the provided subject is empty.
+	// An empty subject is invalid and cannot be subscribed to.
+	// Return an ErrInvalidArgument error to indicate the issue.
+	if len(subject) == 0 {
+		return nil, pubsub.ErrInvalidArgument
+	}
+
+	// Attempting to create a synchronous subscription to a provided object using a NATS connection.
+	// The SubscribeSync method from the NATS library sets up a blocking subscription.
+	// which will wait for messages coming to the specified object.
+	sub, err := s.conn.SubscribeSync(subject)
+
+	// Check if an error occurred while attempting to subscribe.
+	// If so, return nil for the Subscription and the encountered error.
+	// This ensures that the caller is aware of the failure and can handle it accordingly.
+	if err != nil {
+		return nil, err
+	}
+
+	// If the subscription is successfully created, wrap it in a MessageHandler struct.
+	// The MessageHandler struct embeds the actual subscription object and provides
+	// additional methods or properties for managing the subscription lifecycle or processing messages.
+	return &MessageHandler{Subscription: sub}, nil
+}
