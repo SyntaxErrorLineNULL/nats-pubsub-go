@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"testing"
+	"time"
 
 	pubsub "github.com/SyntaxErrorLineNULL/nats-pubsub-go"
 	"github.com/SyntaxErrorLineNULL/nats-pubsub-go/test"
@@ -51,5 +52,49 @@ func TestSubscriber(t *testing.T) {
 		// Assert that the specific error returned is ErrInvalidArgument.
 		// This verifies that the method returns the correct type of error for the given invalid argument.
 		assert.ErrorIs(t, err, pubsub.ErrInvalidArgument, "Expected error to be ErrInvalidArgument when subscribing with an empty subject")
+	})
+
+	// SuccessfulSubscription tests the behavior of the AsyncSubscribe method
+	// when subscribing with a valid subject. It verifies that the subscription
+	// correctly receives and processes messages published to that subject.
+	t.Run("SuccessfulSubscription", func(t *testing.T) {
+		// Define the subject for the message to be subscribed.
+		// The subject acts as a channel or topic to which the message will be sent.
+		// In this test, the subject is set to "test.subject".
+		subject := "test.subscribe.subject"
+		// Define the expected message to be published.
+		// This message should match what is later received by the subscription.
+		expectedMessage := []byte("test_message")
+
+		// Call AsyncSubscribe with the defined subject to create a new subscription.
+		// The method should return a valid subscription and no error if successful.
+		subscription, errSubscribe := subscriber.AsyncSubscribe(subject)
+		// Assert that no error occurred while creating the subscription.
+		// This ensures that the subscription was successfully created.
+		assert.NoError(t, errSubscribe, "Expected no error when subscribing to a valid subject")
+
+		// Publish a message to the subject to test if the subscription receives it.
+		// The message should match the expected message defined above.
+		publishErr := natsConnection.Publish(subject, expectedMessage)
+		// Assert that no error occurred while publishing the message.
+		// This confirms that the message was sent successfully.
+		assert.NoError(t, publishErr, "Expected no error when publishing to the subject")
+
+		// Use a select statement to wait for the message to be received or time out.
+		select {
+		// Case when a message is received from the subscription's message channel.
+		// This block ensures that the received message matches the expected message.
+		case receivedMessage := <-subscription.GetMessage():
+			// Assert that the received message data matches the expected message.
+			// This verifies that the subscription correctly received and processed the message.
+			assert.Equal(t, expectedMessage, receivedMessage.Data, "received message does not match expected")
+
+		// Case when waiting times out after 2 seconds.
+		// This block handles the scenario where no message is received within the timeout period.
+		case <-time.After(2 * time.Second):
+			// Fail the test with a timeout error if no message is received.
+			// This indicates that the message was not received as expected.
+			t.Fatal("Timed out waiting for message")
+		}
 	})
 }
