@@ -37,6 +37,9 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
+      - name: Test
+        run: make test
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
@@ -44,6 +47,3 @@ jobs:
           # The installation mode `goinstall` always uses `CGO_ENABLED=1`.
           install-mode: goinstall
           args: --timeout=10m
-
-      - name: Test
-        run: go test -v ./..
