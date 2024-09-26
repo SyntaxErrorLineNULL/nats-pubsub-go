@@ -12,19 +12,39 @@ import (
 func TestSubscriber(t *testing.T) {
 	t.Parallel()
 
-	// Start a mock NATS server for testing purposes
-	err := test.InitNats()
-	// Assert that the NATS server started without errors
-	assert.NoError(t, err, "Expected no error when starting NATS server")
-	// Ensure the NATS server is properly shut down after tests
-	defer test.ShutdownNatsServer()
+	// Initialize the NATS server with a port of 18222.
+	// Passing 0 as the port indicates that the server should choose a default port.
+	// The InitNats function is expected to return an error if there was a failure in starting the NATS server.
+	natsServer := test.NewNatsServer(19222)
+	// Assert that the newly created NatsServer instance is not nil.
+	// This check verifies that the NatsServer was successfully initialized.
+	// If natsServer is nil, the test will fail, indicating an issue with the server creation.
+	assert.NotNil(t, natsServer, "Expected NatsServer to be initialized, but got nil")
 
-	// Get the NATS connection from the global state
-	natsConnection := test.GetNatsConnection()
-	// Assert that the NATS connection is initialized correctly
+	// Initialize the NATS server with a port of 18222.
+	// Passing 0 as the port indicates that the server should choose a default port.
+	// The InitNats function is expected to return an error if there was a failure in starting the NATS server.
+	err := natsServer.InitNats()
+	// Assert that there is no error from the NATS server initialization.
+	// Assert.NoError function checks that `err` (the actual value) is nil.
+	// If `err` is not nil, it means there was an error during the initialization of the NATS server,
+	// and the provided message "Expected no error when starting NATS server" will indicate the nature of the failure.
+	assert.NoError(t, err, "Expected no error when starting NATS server")
+
+	// Schedule the ShutdownNatsServer function to be called when the surrounding function (test) returns.
+	// This ensures that the NATS server will be properly shut down after the test completes,
+	// preventing resource leaks and ensuring a clean state for subsequent tests.
+	defer natsServer.ShutdownNatsServer()
+
+	// Retrieve the NATS connection instance from the test package.
+	// The GetNatsConnection function is expected to return a pointer to an initialized NATS connection object.
+	// This connection will be used for interacting with the NATS messaging system during the tests.
+	natsConnection := natsServer.GetNatsConnection()
+	// Assert that the retrieved NATS connection is not nil.
+	// Assert.NotNil function checks that `natsConnection` (the actual value) is not nil.
+	// If it is nil, the test will fail, and the provided message "Expected the NATS connection to be initialized, but got nil"
+	// will indicate that the connection was not properly initialized before this point in the test.
 	assert.NotNil(t, natsConnection, "Expected the NATS connection to be initialized, but got nil")
-	// Ensure the NATS connection is properly closed after tests
-	// defer natsConnection.Close()
 
 	// Create a new Subscriber instance using the provided NATS connection.
 	// The NewSubscriber function initializes a Subscriber with the given connection.
