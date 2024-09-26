@@ -44,9 +44,10 @@ func (s *Subscriber) AsyncSubscribe(subject string) (pubsub.MessageHandler, erro
 	// to the code that is using the subscription.
 	messages := make(chan *nats.Msg)
 
-	// Subscribe to the specified subject with a callback function that sends
-	// received messages to the messages channel.
-	sub, err := s.conn.Subscribe(subject, func(msg *nats.Msg) { messages <- msg })
+	// Attempt to subscribe to the subject using ChanSubscribe.
+	// This binds the subject to the messages channel, allowing NATS messages
+	// for that subject to be delivered to the channel.
+	sub, err := s.conn.ChanSubscribe(subject, messages)
 
 	// Check for errors that occurred during subscription.
 	// If an error is returned, it indicates that the subscription could not be created.
@@ -106,13 +107,10 @@ func (s *Subscriber) AsyncQueueSubscribe(subject, queue string) (pubsub.MessageH
 	// to the code that is using the subscription.
 	messages := make(chan *nats.Msg)
 
-	// Attempt to create a queue subscription to the provided subject and queue group.
+	// Attempt to create a queue subscription to the provided subject, message chan and queue group.
 	// The QueueSubscribe method from the NATS library establishes a subscription where
 	// multiple subscribers can share the load of message processing.
-	sub, err := s.conn.QueueSubscribe(subject, queue, func(msg *nats.Msg) {
-		// When a message is received on the subscription, it is sent to the messages channel.
-		messages <- msg
-	})
+	sub, err := s.conn.QueueSubscribeSyncWithChan(subject, queue, messages)
 
 	// Check if an error occurred during the subscription setup.
 	// If an error is returned, it indicates that the subscription could not be created.
