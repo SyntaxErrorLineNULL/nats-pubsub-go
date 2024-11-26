@@ -3,6 +3,7 @@ package pkg
 import (
 	pubsub "github.com/SyntaxErrorLineNULL/nats-pubsub-go"
 	"github.com/nats-io/nats.go"
+	"sync/atomic"
 )
 
 // Subscriber represents a subscription to a NATS server.
@@ -15,7 +16,7 @@ type Subscriber struct {
 
 	// isClose is a flag indicating whether the Subscriber has been closed.
 	// Once set to true, the Subscriber should not allow further publishing.
-	isClose bool
+	isClose atomic.Bool
 }
 
 // NewSubscriber creates a new Subscriber instance with the given NATS connection.
@@ -157,11 +158,6 @@ func (s *Subscriber) SyncQueueSubscribe(subject, queue string) (pubsub.MessageHa
 // resources are released. This method should be called when the Subscriber is no longer needed
 // to prevent resource leaks and ensure graceful shutdown.
 func (s *Subscriber) Close() error {
-	// Mark the Subscriber as closed by setting the isClose flag to true.
-	// This flag indicates that the Subscriber is no longer active and should not
-	// allow further message subscriptions or publications.
-	s.isClose = true
-
 	// Attempt to drain any remaining messages from the NATS connection.
 	// The Drain method ensures that all pending messages are processed before closing the connection.
 	// If an error occurs during this process, it is returned to signal that the connection
@@ -169,6 +165,11 @@ func (s *Subscriber) Close() error {
 	if err := s.conn.Drain(); err != nil {
 		return err
 	}
+
+	// Mark the Subscriber as closed by setting the isClose flag to true.
+	// This flag indicates that the Subscriber is no longer active and should not
+	// allow further message subscriptions or publications.
+	s.isClose.Store(true)
 
 	// Return nil to indicate that the connection was successfully closed.
 	// If no errors occurred during the draining process, the Subscriber is now safely closed.
