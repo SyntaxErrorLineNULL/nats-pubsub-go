@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	pubsub "github.com/SyntaxErrorLineNULL/nats-pubsub-go"
 	"github.com/nats-io/nats.go"
 )
 
@@ -63,6 +64,42 @@ type Message struct {
 
 func NewMessage(parentCtx context.Context) *Message {
 	return &Message{parentCtx: parentCtx}
+}
+
+// Validate checks the integrity and validity of a Message object.
+// It ensures that required fields are populated and that the headers contain valid data.
+// If any validation rule fails, it returns an appropriate error.
+func (msg *Message) Validate() error {
+	// Uses a switch statement to evaluate multiple conditions for validation.
+	// Each case addresses a specific aspect of the Message object's structure.
+	switch {
+	// Checks if the Subject field is empty.
+	// The Subject is a mandatory field, so an empty value is considered invalid.
+	case msg.Subject == "":
+		// Returns an error indicating the argument is invalid.
+		return pubsub.ErrInvalidArgument
+
+	// Checks if the Header field is not nil, ensuring headers are valid.
+	// Iterates through each key-value pair in the Header map to validate its content.
+	case msg.Header != nil:
+		for key, values := range msg.Header {
+			// Validates that the key is non-empty and that the values slice has at least one element.
+			// An empty key or an empty values slice is considered invalid.
+			if key == "" || len(values) == 0 {
+				// Returns an error if the header data is invalid.
+				return pubsub.ErrInvalidArgument
+			}
+		}
+
+	// Checks if the Container field is empty.
+	// The Container field must contain data for the Message to be valid.
+	case len(msg.Container) == 0:
+		// Returns an error indicating the Container is invalid.
+		return pubsub.ErrInvalidArgument
+	}
+
+	// If all validation checks pass, returns nil to indicate the Message object is valid.
+	return nil
 }
 
 // ReceiveMessage waits for the next message on the subscription with the specified timeout duration.
