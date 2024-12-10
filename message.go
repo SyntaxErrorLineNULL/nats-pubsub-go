@@ -58,3 +58,12 @@ func (msg *Message) GetContainer() Container {
 	// This represents the payload of the message that was received from NATS.
 	return msg.message.Data
 }
+
+// GetHeader retrieves the header information from the underlying NATS message.
+// This method converts the header from the NATS message into the custom Header type,
+// allowing consumers to access metadata associated with the message in a structured manner.
+func (msg *Message) GetHeader() Header {
+	// Access and convert the header field from the underlying NATS message.
+	// The header contains key-value pairs representing metadata about the message.
+	return Header(msg.message.Header)
+}
