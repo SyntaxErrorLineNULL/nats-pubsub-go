@@ -37,6 +37,13 @@ func (s *Subscriber) Subscriber(ctx context.Context, subject, queue string) (<-c
 		return nil, pubsub.ErrCloseConnection
 	}
 
+	// Check if the provided subject or queue is empty.
+	// An empty subject or queue is invalid and cannot be subscribed to.
+	// Return an ErrInvalidArgument error to indicate the issue.
+	if subject == "" || queue == "" {
+		return nil, pubsub.ErrInvalidArgument
+	}
+
 	return nil, nil
 }
 
