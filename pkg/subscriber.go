@@ -29,7 +29,14 @@ func NewSubscriber(conn *nats.Conn) *Subscriber {
 	return &Subscriber{conn: conn}
 }
 
-func (s *Subscriber) Subscriber(ctx context.Context, subject string) (<-chan pubsub.MessageHandler, error) {
+func (s *Subscriber) Subscriber(ctx context.Context, subject, queue string) (<-chan pubsub.MessageHandler, error) {
+	// Check if the subscriber is closed. If closed, return an ErrCloseConnection error.
+	// This prevents a situation where the client has closed the Subscriber but then tries to perform some manipulations afterwards, guaranteeing
+	// that no operations will be performed on a closed instance.
+	if s.isClose.Load() {
+		return nil, pubsub.ErrCloseConnection
+	}
+
 	return nil, nil
 }
 
