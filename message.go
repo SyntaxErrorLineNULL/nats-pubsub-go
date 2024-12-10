@@ -1,0 +1,1 @@
+package nats_pubsub_go
