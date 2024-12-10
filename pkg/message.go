@@ -1,4 +1,4 @@
-package nats_pubsub_go
+package pkg
 
 import (
 	"context"
@@ -22,11 +22,15 @@ type Header map[string][]string
 type Message struct {
 	// RequestID is a unique identifier for the message.
 	// This ID is used to track and correlate requests and responses in the messaging system.
-	RequestID string
+	RequestID string `json:"request_id,omitempty"`
 
 	// Container holds the payload of the message as a byte slice.
 	// It represents the data being transmitted or processed in the communication.
-	Container Container
+	Container Container `json:"container,omitempty"`
+
+	// RequestTime records the time when the request was created or received.
+	// This timestamp is valuable for tracking message lifecycle and processing logic of some tasks.
+	RequestTime time.Time `json:"request_time,omitempty"`
 
 	// Message is a NATS message data.
 	// This channel allows consumers to process incoming messages
