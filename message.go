@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/nats-io/nats.go"
 	"sync"
+	"time"
 )
 
 // Container represents a byte slice used to store data within the Message structure.
@@ -66,4 +67,42 @@ func (msg *Message) GetHeader() Header {
 	// Access and convert the header field from the underlying NATS message.
 	// The header contains key-value pairs representing metadata about the message.
 	return Header(msg.message.Header)
+}
+
+// Ack acknowledges the receipt of the message, notifying the NATS system that it has been processed.
+// It supports an optional timeout for acknowledgment and cancels if the parent context is done.
+// If a timeout is not specified, the message is acknowledged immediately.
+// If the parent context is canceled before the timeout, the acknowledgment is aborted, and the context error is returned.
+func (msg *Message) Ack(timeout time.Duration) error {
+	// Check if no timeout is specified.
+	// If timeout is zero, acknowledge the message immediately without delay.
+	if timeout == 0 {
+		// Acknowledge the message immediately when no timeout is set.
+		return msg.message.Ack()
+	}
+
+	// Create a ticker that will emit an event after the specified timeout duration.
+	// This provides a mechanism to handle the delay in acknowledging the message, based on the given timeout.
+	ticker := time.NewTicker(timeout)
+	// Ensure that the ticker is properly stopped after use to release any associated resources.
+	// This is important to avoid potential resource leaks or unnecessary background work.
+	defer ticker.Stop()
+
+	// Use a select statement to wait for either the timeout or a cancellation signal from the parent context.
+	// This allows the function to handle both the timeout event and the context cancellation in a non-blocking manner.
+	select {
+	// Case for when the ticker triggers, signaling the timeout has elapsed.
+	// Acknowledge the message at this point.
+	case <-ticker.C:
+		// Acknowledge the message after the timeout has elapsed.
+		// This ensures that the message is acknowledged only after the specified waiting period.
+		return msg.message.Ack()
+
+	// Case for when the parent context is canceled before the timeout.
+	// Return the context's error to indicate that the acknowledgment was not completed.
+	case <-msg.parentCtx.Done():
+		// Return the error associated with the context cancellation.
+		// This ensures that the operation is properly terminated if the context is canceled.
+		return msg.parentCtx.Err()
+	}
 }
