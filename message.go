@@ -52,6 +52,22 @@ func NewMessage(parentCtx context.Context) *Message {
 	return &Message{parentCtx: parentCtx}
 }
 
+// ReceiveMessage waits for the next message on the subscription with the specified timeout duration.
+// It returns the received NATS message or an error if the operation times out.
+// Note: This method can only be used with SyncSubscribe.
+func (msg *Message) ReceiveMessage(timeout time.Duration) (*nats.Msg, error) {
+	// Wait for the next message on the subscription with the given timeout duration.
+	// The NextMsg method blocks until a message is received or the timeout is reached.
+	// If a message is received, it is returned; otherwise, an error is returned.
+	nextMessage, err := msg.subscription.NextMsg(timeout)
+	if err != nil {
+		return nil, err
+	}
+	// Return the received message along with a nil error if NextMsg succeeds.
+	// This means the message was successfully retrieved within the specified timeout.
+	return nextMessage, nil
+}
+
 // GetContainer retrieves the container payload from the underlying NATS message data.
 // This method returns the raw data associated with the message, allowing consumers
 // to access the payload for further processing or handling.
