@@ -123,3 +123,12 @@ func (msg *Message) Nak(timeout time.Duration) error {
 	// This uses the provided timeout to delay the rejection, which can be useful in specific scenarios.
 	return msg.message.NakWithDelay(timeout)
 }
+
+// Respond sends a response back to the sender of the message.
+// This is typically used in a request-response pattern where the sender expects a reply to the message it sent.
+// The data parameter contains the payload to be sent as the response.
+func (msg *Message) Respond(data []byte) error {
+	// Use the NATS Respond method to send the provided data as a response to the message.
+	// This operation communicates the reply to the message's sender, adhering to the NATS messaging protocol.
+	return msg.message.Respond(data)
+}
