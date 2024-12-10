@@ -6,12 +6,24 @@ import (
 	"sync"
 )
 
+// Container represents a byte slice used to store data within the Message structure.
+// It acts as a container for the payload associated with the message.
 type Container []byte
 
+// Header represents a map of string keys to slices of string values.
+// It is used to store metadata or headers associated with a message.
 type Header map[string][]string
 
+// Message represents a communication unit in a NATS-based messaging system.
+// It encapsulates the necessary components for processing messages,
+// including the payload, metadata, and underlying NATS-specific details.
 type Message struct {
+	// RequestID is a unique identifier for the message.
+	// This ID is used to track and correlate requests and responses in the messaging system.
 	RequestID string
+
+	// Container holds the payload of the message as a byte slice.
+	// It represents the data being transmitted or processed in the communication.
 	Container Container
 
 	// Message is a NATS message data.
@@ -29,9 +41,11 @@ type Message struct {
 	// the channel and unsubscribing, are executed only a single time.
 	once sync.Once
 
+	// parentCtx is the context associated with the message's parent operation.
+	// It provides a way to propagate cancellation, timeouts, or deadlines across operations.
 	parentCtx context.Context
 }
 
-func NewMessage() *Message {
-	return &Message{}
+func NewMessage(parentCtx context.Context) *Message {
+	return &Message{parentCtx: parentCtx}
 }
