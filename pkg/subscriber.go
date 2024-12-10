@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"context"
 	pubsub "github.com/SyntaxErrorLineNULL/nats-pubsub-go"
 	"github.com/nats-io/nats.go"
 	"sync/atomic"
@@ -26,6 +27,10 @@ func NewSubscriber(conn *nats.Conn) *Subscriber {
 	// Return a pointer to a new Subscriber instance initialized with the provided connection.
 	// The isClose flag is initialized to its zero value, which is false.
 	return &Subscriber{conn: conn}
+}
+
+func (s *Subscriber) Subscriber(ctx context.Context, subject string) (<-chan pubsub.MessageHandler, error) {
+	return nil, nil
 }
 
 // AsyncSubscribe subscribes to a subject asynchronously and returns a Subscription object
