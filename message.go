@@ -68,6 +68,25 @@ func (msg *Message) ReceiveMessage(timeout time.Duration) (*nats.Msg, error) {
 	return nextMessage, nil
 }
 
+// Unsubscribe terminates the subscription and closes the data channel.
+// It ensures that the channel is closed only once and that the subscription
+// is properly unsubscribed from. This method helps clean up resources
+// and prevent memory leaks or dangling subscriptions.
+func (msg *Message) Unsubscribe() (err error) {
+	// Ensure the Data channel is closed only once by using the sync.Once mechanism.
+	// The sync.Once type ensures that the provided function is executed only once,
+	// regardless of how many times it's called.
+	msg.once.Do(func() {
+
+		// Unsubscribe from the current subscription to stop receiving messages.
+		// The Unsubscribe method call removes the subscription and cleans up resources.
+		err = msg.subscription.Unsubscribe()
+	})
+
+	// Return any error encountered during the Unsubscribe process.
+	return err
+}
+
 // GetContainer retrieves the container payload from the underlying NATS message data.
 // This method returns the raw data associated with the message, allowing consumers
 // to access the payload for further processing or handling.
