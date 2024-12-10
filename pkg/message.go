@@ -20,6 +20,15 @@ type Header map[string][]string
 // It encapsulates the necessary components for processing messages,
 // including the payload, metadata, and underlying NATS-specific details.
 type Message struct {
+	// Subject defines the NATS subject associated with this message.
+	// It serves as the primary routing key for message delivery within the NATS system.
+	Subject string
+
+	// Header contains metadata associated with the message in key-value format.
+	// It provides additional context or configuration for the message,
+	// allowing consumers to interpret or process it effectively.
+	Header Header
+
 	// RequestID is a unique identifier for the message.
 	// This ID is used to track and correlate requests and responses in the messaging system.
 	RequestID string `json:"request_id,omitempty"`
