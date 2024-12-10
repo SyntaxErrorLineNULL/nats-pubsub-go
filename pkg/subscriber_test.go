@@ -355,4 +355,38 @@ func TestSubscriber(t *testing.T) {
 		// This ensures that the method correctly identifies the empty queue name as an invalid argument.
 		assert.ErrorIs(t, err, pubsub.ErrInvalidArgument, "Expected error to be ErrInvalidArgument when QueueSubscribing with an empty queue name")
 	})
+
+	// CloseSubscriber tests the behavior of the Close method when invoked on a subscriber connection.
+	// This test verifies that the close flag is updated correctly on the first invocation of the Close method,
+	// that the method does not return an error on the initial call, and that subsequent calls to Close
+	// return the appropriate error, indicating the connection is already closed.
+	t.Run("CloseSubscriber", func(t *testing.T) {
+		// Check the initial state of the subscriber's close flag.
+		// The flag should be false, indicating that the subscriber connection is open.
+		assert.False(t, subscriber.isClose.Load(), "The subscriber should be initially open")
+
+		// Attempt to close the subscriber connection by calling the Close method.
+		// The first call to Close should successfully transition the state to closed.
+		err = subscriber.Close()
+
+		// Verify that no error is returned during the first Close operation.
+		// The absence of an error indicates that the close operation was successful.
+		assert.NoError(t, err, "First call to Close should not return an error")
+
+		// Check the close flag after the first Close invocation.
+		// The flag should now be true, reflecting that the subscriber connection is closed.
+		assert.True(t, subscriber.isClose.Load(), "The subscriber should be closed after the first call to Close")
+
+		// Make a second call to the Close method to test redundant closure behavior.
+		// Since the subscriber is already closed, this operation should fail with an error.
+		err = subscriber.Close()
+
+		// Verify that an error is returned on the second Close invocation.
+		// The error indicates that the connection cannot be closed again because it is already closed.
+		assert.Error(t, err, "Second call to Close should return an error")
+
+		// Ensure that the returned error is the expected ErrConnectionAlreadyClosed.
+		// This specific error indicates that the connection was already closed during the second call.
+		assert.ErrorIs(t, err, pubsub.ErrConnectionAlreadyClosed, "The error should indicate the connection is already closed")
+	})
 }

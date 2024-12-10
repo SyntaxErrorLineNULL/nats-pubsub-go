@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"sync/atomic"
 	"time"
 
 	"github.com/SyntaxErrorLineNULL/nats-pubsub-go"
@@ -17,7 +18,7 @@ type Publisher struct {
 
 	// isClose is a flag indicating whether the Publisher has been closed.
 	// Once set to true, the Publisher should not allow further publishing.
-	isClose bool
+	isClose atomic.Bool
 }
 
 // NewPublisher creates and returns a new instance of Publisher.
@@ -37,7 +38,7 @@ func (p *Publisher) Publish(messages ...*nats.Msg) error {
 	// Check if the Publisher is closed. If it is, return an ErrCloseConnection error.
 	// This prevents publishing when the Publisher is in a closed state, ensuring
 	// no operations are performed on a closed instance.
-	if p.isClose {
+	if p.isClose.Load() {
 		return nats_pubsub_go.ErrCloseConnection
 	}
 
@@ -75,7 +76,7 @@ func (p *Publisher) Publish(messages ...*nats.Msg) error {
 func (p *Publisher) Request(message *nats.Msg, timeout time.Duration) (*nats.Msg, error) {
 	// Check if the Publisher is closed. If it is, return an ErrCloseConnection error.
 	// This prevents sending requests when the Publisher is in a closed state.
-	if p.isClose {
+	if p.isClose.Load() {
 		return nil, nats_pubsub_go.ErrCloseConnection
 	}
 
@@ -104,13 +105,13 @@ func (p *Publisher) Close() {
 	// Check if the Publisher is already closed. If it is, return immediately
 	// to avoid redundant operations and potential errors. This prevents
 	// attempting to close an already closed connection.
-	if p.isClose {
+	if p.isClose.Load() {
 		return
 	}
 
 	// Set the isClose flag to true, indicating that the Publisher is closed.
 	// This flag can be used to prevent further publishing operations.
-	p.isClose = true
+	p.isClose.Store(true)
 
 	// Close the underlying NATS connection. This releases any resources associated
 	// with the connection and ensures that the Publisher is properly shut down.

@@ -13,7 +13,7 @@ import (
 func TestPublisher(t *testing.T) {
 	t.Parallel()
 
-	// Initialize the NATS server with a port of 18222.
+	// Initialize the NATS server with a port of 14222.
 	// Passing 0 as the port indicates that the server should choose a default port.
 	// The InitNats function is expected to return an error if there was a failure in starting the NATS server.
 	natsServer := test.NewNatsServer(14222)
@@ -277,7 +277,7 @@ func TestPublisherClose(t *testing.T) {
 		// Assert that the isClose flag is set to true after calling Close.
 		// This confirms that the Publisher has been marked as closed and no further
 		// publishing operations should be allowed.
-		assert.True(t, closePublish.isClose, "Expected Publisher to be marked as closed")
+		assert.True(t, closePublish.isClose.Load(), "Expected Publisher to be marked as closed")
 
 		// Attempt to publish a message using the now-closed Publisher.
 		// This should fail because the Publisher's connection has been closed.

@@ -3,6 +3,7 @@ package pkg
 import (
 	pubsub "github.com/SyntaxErrorLineNULL/nats-pubsub-go"
 	"github.com/nats-io/nats.go"
+	"sync/atomic"
 )
 
 // Subscriber represents a subscription to a NATS server.
@@ -15,7 +16,7 @@ type Subscriber struct {
 
 	// isClose is a flag indicating whether the Subscriber has been closed.
 	// Once set to true, the Subscriber should not allow further publishing.
-	isClose bool
+	isClose atomic.Bool
 }
 
 // NewSubscriber creates a new Subscriber instance with the given NATS connection.
@@ -32,6 +33,13 @@ func NewSubscriber(conn *nats.Conn) *Subscriber {
 // a channel for receiving messages.
 // Docs: https://docs.nats.io/using-nats/developer/receiving/async
 func (s *Subscriber) AsyncSubscribe(subject string) (pubsub.MessageHandler, error) {
+	// Check if the subscriber is closed. If closed, return an ErrCloseConnection error.
+	// This prevents a situation where the client has closed the Subscriber but then tries to perform some manipulations afterwards, guaranteeing
+	// that no operations will be performed on a closed instance.
+	if s.isClose.Load() {
+		return nil, pubsub.ErrCloseConnection
+	}
+
 	// Check if the provided subject is empty.
 	// An empty subject is invalid and cannot be subscribed to.
 	// Return an ErrInvalidArgument error to indicate the issue.
@@ -66,6 +74,13 @@ func (s *Subscriber) AsyncSubscribe(subject string) (pubsub.MessageHandler, erro
 // returning a MessageHandler that can be used to receive messages. It validates
 // the subject and ensures proper error handling for subscription issues.
 func (s *Subscriber) SyncSubscribe(subject string) (pubsub.MessageHandler, error) {
+	// Check if the subscriber is closed. If closed, return an ErrCloseConnection error.
+	// This prevents a situation where the client has closed the Subscriber but then tries to perform some manipulations afterwards, guaranteeing
+	// that no operations will be performed on a closed instance.
+	if s.isClose.Load() {
+		return nil, pubsub.ErrCloseConnection
+	}
+
 	// Check if the provided subject is empty.
 	// An empty subject is invalid and cannot be subscribed to.
 	// Return an ErrInvalidArgument error to indicate the issue.
@@ -95,6 +110,13 @@ func (s *Subscriber) SyncSubscribe(subject string) (pubsub.MessageHandler, error
 // It returns a Subscription object or an error if the subject or queue is empty.
 // The Subscribe method registers a callback function to handle incoming messages asynchronously.
 func (s *Subscriber) AsyncQueueSubscribe(subject, queue string) (pubsub.MessageHandler, error) {
+	// Check if the subscriber is closed. If closed, return an ErrCloseConnection error.
+	// This prevents a situation where the client has closed the Subscriber but then tries to perform some manipulations afterwards, guaranteeing
+	// that no operations will be performed on a closed instance.
+	if s.isClose.Load() {
+		return nil, pubsub.ErrCloseConnection
+	}
+
 	// Check if the provided subject or queue is empty.
 	// An empty subject or queue is invalid and cannot be subscribed to.
 	// Return an ErrInvalidArgument error to indicate the issue.
@@ -129,6 +151,13 @@ func (s *Subscriber) AsyncQueueSubscribe(subject, queue string) (pubsub.MessageH
 // This means it will block until a message is received from the subject within the specified queue group.
 // It returns a MessageHandler to manage the subscription and receive messages.
 func (s *Subscriber) SyncQueueSubscribe(subject, queue string) (pubsub.MessageHandler, error) {
+	// Check if the subscriber is closed. If closed, return an ErrCloseConnection error.
+	// This prevents a situation where the client has closed the Subscriber but then tries to perform some manipulations afterwards, guaranteeing
+	// that no operations will be performed on a closed instance.
+	if s.isClose.Load() {
+		return nil, pubsub.ErrCloseConnection
+	}
+
 	// Check if the provided subject or queue is empty.
 	// An empty subject or queue is invalid and cannot be subscribed to.
 	// Return an ErrInvalidArgument error to indicate the issue.
@@ -157,10 +186,13 @@ func (s *Subscriber) SyncQueueSubscribe(subject, queue string) (pubsub.MessageHa
 // resources are released. This method should be called when the Subscriber is no longer needed
 // to prevent resource leaks and ensure graceful shutdown.
 func (s *Subscriber) Close() error {
-	// Mark the Subscriber as closed by setting the isClose flag to true.
-	// This flag indicates that the Subscriber is no longer active and should not
-	// allow further message subscriptions or publications.
-	s.isClose = true
+	// Check if the connection is marked as closed by reading the state of the isClose atomic flag.
+	// The isClose flag is used to track whether the connection has already been closed in a thread-safe manner.
+	// If the flag indicates that the connection is closed, return the predefined ErrConnectionAlreadyClosed error.
+	// This ensures that any further operations on a closed connection are prevented, maintaining stability and integrity.
+	if s.isClose.Load() {
+		return pubsub.ErrConnectionAlreadyClosed
+	}
 
 	// Attempt to drain any remaining messages from the NATS connection.
 	// The Drain method ensures that all pending messages are processed before closing the connection.
@@ -169,6 +201,11 @@ func (s *Subscriber) Close() error {
 	if err := s.conn.Drain(); err != nil {
 		return err
 	}
+
+	// Mark the Subscriber as closed by setting the isClose flag to true.
+	// This flag indicates that the Subscriber is no longer active and should not
+	// allow further message subscriptions or publications.
+	s.isClose.Store(true)
 
 	// Return nil to indicate that the connection was successfully closed.
 	// If no errors occurred during the draining process, the Subscriber is now safely closed.

@@ -12,4 +12,9 @@ var (
 	// on a closed connection. It signifies that the connection has been
 	// terminated and cannot be used for further operations.
 	ErrCloseConnection = errors.New("connection is close")
+
+	// ErrConnectionAlreadyClosed indicates that a connection closure was attempted on an already closed connection.
+	// This error helps differentiate between the connection being in a valid state versus being redundantly closed.
+	// By defining this error, the code provides a specific signal to handle such redundant closure attempts gracefully.
+	ErrConnectionAlreadyClosed = errors.New("connection is already closed")
 )
