@@ -2,9 +2,10 @@ package nats_pubsub_go
 
 import (
 	"context"
-	"github.com/nats-io/nats.go"
 	"sync"
 	"time"
+
+	"github.com/nats-io/nats.go"
 )
 
 // Container represents a byte slice used to store data within the Message structure.
