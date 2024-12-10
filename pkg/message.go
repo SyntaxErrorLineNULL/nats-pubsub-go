@@ -62,8 +62,8 @@ type Message struct {
 	parentCtx context.Context
 }
 
-func NewMessage(parentCtx context.Context) *Message {
-	return &Message{parentCtx: parentCtx}
+func NewMessage(reqID string, container Container, header Header) *Message {
+	return &Message{RequestID: reqID, Container: container, Header: header}
 }
 
 // Validate checks the integrity and validity of a Message object.
