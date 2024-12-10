@@ -70,3 +70,44 @@ type Encode interface {
 	// Returns the custom Message if successful or an error if the transformation fails.
 	Encode(msg *nats.Msg) (*Message, error)
 }
+
+// Encode implements the Encode interface to convert a NATS message into a custom Message structure.
+// This function processes the raw data and metadata from the NATS message and transforms it into
+// a structured custom Message that is compatible with the application's requirements.
+func (Encoding) Encode(msg *nats.Msg) (*Message, error) {
+	// Checks if the provided Message object is nil.
+	// If it is nil, an error is returned immediately, indicating the message is empty.
+	if msg == nil {
+		return nil, errors.New("message is empty")
+	}
+
+	// Initializes a new buffer that will temporarily hold the JSON-encoded data.
+	// This buffer acts as the target for the encoding process.
+	buffer := new(bytes.Buffer)
+
+	// Writes the raw data from the NATS message into the buffer.
+	// This step ensures the data is available for the JSON decoder.
+	// If writing to the buffer fails, the function returns the encountered error.
+	if _, err := buffer.Write(msg.Data); err != nil {
+		return nil, err
+	}
+
+	// Initializes a JSON decoder to parse the data within the buffer.
+	// The decoder converts the JSON-formatted data into a Go structure.
+	decoder := json.NewDecoder(buffer)
+
+	// Declares a variable to hold the result of decoding the JSON data.
+	// This variable will store the custom Message constructed from the decoded input.
+	var message Message
+	// Decodes the JSON data from the buffer into the custom Message structure.
+	// If the decoding process encounters an error, the function immediately returns it,
+	// signaling that the input data is not valid JSON or does not match the expected format.
+	if err := decoder.Decode(&message); err != nil {
+		return nil, err
+	}
+
+	// Constructs a new custom Message using the decoded data and the header from the NATS message.
+	// The NewMessage function ensures that the Message is initialized with all required fields,
+	// including RequestID, Container, and Header.
+	return NewMessage(message.RequestID, message.Container, Header(msg.Header)), nil
+}
