@@ -62,6 +62,9 @@ type Message struct {
 	parentCtx context.Context
 }
 
+// NewMessage is a constructor function for creating a new instance of the Message structure.
+// It initializes a Message object with the provided request ID, container, and header.
+// This function simplifies the creation of Message instances by encapsulating the initialization logic.
 func NewMessage(reqID string, container Container, header Header) *Message {
 	return &Message{RequestID: reqID, Container: container, Header: header}
 }
