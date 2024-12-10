@@ -2,6 +2,8 @@ package pkg
 
 import (
 	"bytes"
+	"errors"
+
 	"github.com/nats-io/nats.go"
 	"github.com/segmentio/encoding/json"
 )
@@ -26,13 +28,25 @@ type Encoding struct{}
 // This method serializes the Message's content, including its payload and metadata,
 // into JSON format and assigns the serialized data to the NATS message fields.
 func (Encoding) Decode(msg *Message) (*nats.Msg, error) {
-	// Initializes a buffer to temporarily hold the JSON-encoded data.
-	var buffer bytes.Buffer
+	// Checks if the provided Message object is nil.
+	// If it is nil, an error is returned immediately, indicating the message is empty.
+	if msg == nil {
+		return nil, errors.New("message is empty")
+	}
+
+	// Validates the provided Message object using its Validate method.
+	// If validation fails, the error is returned, indicating what went wrong.
+	if err := msg.Validate(); err != nil {
+		return nil, err
+	}
+
+	// Initializes a new buffer that will temporarily hold the JSON-encoded data.
+	// This buffer acts as the target for the encoding process.
+	buffer := new(bytes.Buffer)
 
 	// Creates a JSON encoder that writes to the buffer.
 	// The encoder is responsible for serializing the Message into JSON format.
-	encoder := json.NewEncoder(&buffer)
-
+	encoder := json.NewEncoder(buffer)
 	// Attempts to encode the custom Message into JSON and store it in the buffer.
 	// If an error occurs during encoding, the function immediately returns the error.
 	if err := encoder.Encode(msg); err != nil {
