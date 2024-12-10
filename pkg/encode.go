@@ -59,3 +59,14 @@ func (Encoding) Decode(msg *Message) (*nats.Msg, error) {
 	// using the corresponding fields from the custom Message.
 	return &nats.Msg{Subject: msg.Subject, Data: buffer.Bytes(), Header: nats.Header(msg.Header)}, nil
 }
+
+// Encode defines an interface for encoding a NATS message into a custom Message.
+// It abstracts the process of converting NATS-level message representations
+// into application-specific Message structures to support interoperability.
+type Encode interface {
+	// Encode is responsible for transforming a NATS message into a custom Message.
+	// The resulting custom Message contains data and metadata extracted from the NATS message,
+	// formatted for use within the application's messaging system.
+	// Returns the custom Message if successful or an error if the transformation fails.
+	Encode(msg *nats.Msg) (*Message, error)
+}
