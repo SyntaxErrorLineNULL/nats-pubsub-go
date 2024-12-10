@@ -106,3 +106,20 @@ func (msg *Message) Ack(timeout time.Duration) error {
 		return msg.parentCtx.Err()
 	}
 }
+
+// Nak sends a negative acknowledgment for the message, signaling that it was not processed successfully.
+// This can inform the NATS system to requeue the message for further processing or take alternative action.
+// It provides support for an optional delay before sending the negative acknowledgment.
+// If a timeout is specified, it uses NakWithDelay to apply the delay; otherwise, it sends an immediate Nak.
+func (msg *Message) Nak(timeout time.Duration) error {
+	// Check if no timeout is specified for the negative acknowledgment.
+	// If timeout is zero, immediately send the negative acknowledgment without any delay.
+	if timeout == 0 {
+		// Directly send a negative acknowledgment for the message, indicating immediate rejection.
+		return msg.message.Nak()
+	}
+
+	// Send a negative acknowledgment with the specified delay.
+	// This uses the provided timeout to delay the rejection, which can be useful in specific scenarios.
+	return msg.message.NakWithDelay(timeout)
+}
