@@ -49,3 +49,12 @@ type Message struct {
 func NewMessage(parentCtx context.Context) *Message {
 	return &Message{parentCtx: parentCtx}
 }
+
+// GetContainer retrieves the container payload from the underlying NATS message data.
+// This method returns the raw data associated with the message, allowing consumers
+// to access the payload for further processing or handling.
+func (msg *Message) GetContainer() Container {
+	// Access and return the data field from the underlying NATS message.
+	// This represents the payload of the message that was received from NATS.
+	return msg.message.Data
+}
