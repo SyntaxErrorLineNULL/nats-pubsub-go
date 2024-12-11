@@ -144,4 +144,23 @@ func TestEncode(t *testing.T) {
 		// This ensures that the method validates input correctly and avoids processing invalid data.
 		assert.Error(t, err, "Expected an error when encoding a nil message")
 	})
+
+	// InvalidJSONInNATSMessage tests the behavior of the Encode method when the input NATS message contains invalid JSON data.
+	// It verifies that the method correctly identifies the invalid JSON and returns an appropriate error.
+	// This test ensures the robustness of the Encode method in handling improperly formatted input data.
+	t.Run("InvalidJSONInNATSMessage", func(t *testing.T) {
+		// Create a NATS message containing invalid JSON in the Data field.
+		// This simulates a scenario where the message being processed has malformed JSON data,
+		// which the Encode method should be able to detect and reject.
+		invalidNATSMsg := &nats.Msg{Data: []byte(`invalid json`)}
+
+		// Attempt to encode the NATS message containing invalid JSON.
+		// The Encode method is expected to fail and return an error in this scenario.
+		_, err := encoder.Encode(invalidNATSMsg)
+
+		// Assert that an error is returned during the encoding process.
+		// This ensures the method correctly validates the JSON format in the input message
+		// and fails gracefully when invalid data is provided.
+		assert.Error(t, err, "Expected an error when encoding a NATS message with invalid JSON data")
+	})
 }
