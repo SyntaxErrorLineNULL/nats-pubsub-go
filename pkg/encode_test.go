@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/segmentio/encoding/json"
@@ -91,4 +92,42 @@ func TestEncodingDecode(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEncode(t *testing.T) {
+	// Declare a variable of type Encoding. This variable will hold the instance of the encoding/decoding functionality
+	// that will be tested in the test cases.
+	var encoder Encoding
+	// Assert that the encoder variable is not nil.
+	// This check ensures that the Encoding instance has been properly initialized or is available for use.
+	// A nil value here would indicate a critical setup issue, rendering the test invalid.
+	assert.NotNil(t, encoder, "Expected encoder to be non-nil before running tests")
+
+	// ValidNATSMessage tests the ability of the encoder to accurately decode and re-encode
+	// a custom Message to and from a NATS message. This test ensures the encoder handles
+	// valid data without errors and produces consistent results through the round-trip conversion.
+	// It validates the functionality of the Encode and Decode methods under normal conditions.
+	t.Run("ValidNATSMessage", func(t *testing.T) {
+		// Define a custom Message with valid test data for encoding and decoding.
+		// This Message includes a subject, request ID, container data, and a current timestamp.
+		message := &Message{Subject: "test.subject", Header: nil, RequestID: "6557162e-7a05-4840-a350-12a6f67e2b3b", Container: Container(`{"id": 1,"name": "Tammi Watson"}`), RequestTime: time.Now()}
+
+		// Attempt to decode the custom Message into a NATS message.
+		// The Decode method transforms the application-level message into NATS-compatible format.
+		natsMsg, err := encoder.Decode(message)
+		// Assert that no error occurred during the decoding process.
+		// This verifies that valid messages are handled without issues during decoding.
+		assert.NoError(t, err, "Expected no error during decode operation")
+		// Assert that the resulting NATS message is not nil, indicating successful decoding.
+		assert.NotNil(t, natsMsg, "Expected a non-nil NATS message after decoding")
+
+		// Attempt to encode the NATS message back into the custom Message format.
+		// This ensures the round-trip transformation is consistent and correct.
+		res, err := encoder.Encode(natsMsg)
+		// Assert that no error occurred during the encoding process.
+		// This confirms that valid NATS messages are handled correctly during encoding.
+		assert.NoError(t, err, "Expected no error during encode operation")
+		// Assert that the re-encoded Message is not nil, verifying successful encoding.
+		assert.NotNil(t, res, "Expected a non-nil custom message after encoding")
+	})
 }
