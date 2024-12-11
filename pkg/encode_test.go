@@ -130,4 +130,18 @@ func TestEncode(t *testing.T) {
 		// Assert that the re-encoded Message is not nil, verifying successful encoding.
 		assert.NotNil(t, res, "Expected a non-nil custom message after encoding")
 	})
+
+	// EmptyMessage tests the behavior of the Encode method when it is called with a nil message.
+	// It verifies that the method appropriately handles invalid input by returning an error.
+	// This test ensures that the Encode method is robust against edge cases and fails gracefully when given invalid data.
+	t.Run("EmptyMessage", func(t *testing.T) {
+		// Attempt to encode a nil message.
+		// This simulates a scenario where the Encode method is called without a valid Message object.
+		// The expected behavior is for the method to return an error, indicating the invalid input.
+		_, err := encoder.Encode(nil)
+
+		// Assert that an error is returned during the encoding process when given a nil message.
+		// This ensures that the method validates input correctly and avoids processing invalid data.
+		assert.Error(t, err, "Expected an error when encoding a nil message")
+	})
 }
