@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"context"
 	pubsub "github.com/SyntaxErrorLineNULL/nats-pubsub-go"
 	"github.com/nats-io/nats.go"
 	"sync/atomic"
@@ -26,6 +27,24 @@ func NewSubscriber(conn *nats.Conn) *Subscriber {
 	// Return a pointer to a new Subscriber instance initialized with the provided connection.
 	// The isClose flag is initialized to its zero value, which is false.
 	return &Subscriber{conn: conn}
+}
+
+func (s *Subscriber) Subscriber(ctx context.Context, subject, queue string) (<-chan pubsub.MessageHandler, error) {
+	// Check if the subscriber is closed. If closed, return an ErrCloseConnection error.
+	// This prevents a situation where the client has closed the Subscriber but then tries to perform some manipulations afterwards, guaranteeing
+	// that no operations will be performed on a closed instance.
+	if s.isClose.Load() {
+		return nil, pubsub.ErrCloseConnection
+	}
+
+	// Check if the provided subject or queue is empty.
+	// An empty subject or queue is invalid and cannot be subscribed to.
+	// Return an ErrInvalidArgument error to indicate the issue.
+	if subject == "" || queue == "" {
+		return nil, pubsub.ErrInvalidArgument
+	}
+
+	return nil, nil
 }
 
 // AsyncSubscribe subscribes to a subject asynchronously and returns a Subscription object
