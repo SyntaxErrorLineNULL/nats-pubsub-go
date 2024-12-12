@@ -109,5 +109,5 @@ func (Encoding) Encode(msg *nats.Msg) (*Message, error) {
 	// Constructs a new custom Message using the decoded data and the header from the NATS message.
 	// The NewMessage function ensures that the Message is initialized with all required fields,
 	// including RequestID, Container, and Header.
-	return NewMessage(message.RequestID, message.Container, Header(msg.Header)), nil
+	return &message, nil
 }
