@@ -129,6 +129,18 @@ func TestEncode(t *testing.T) {
 		assert.NoError(t, err, "Expected no error during encode operation")
 		// Assert that the re-encoded Message is not nil, verifying successful encoding.
 		assert.NotNil(t, res, "Expected a non-nil custom message after encoding")
+		// Verify that the request ID of the re-encoded Message matches the original custom Message.
+		// This confirms that the request ID field is preserved correctly during the round-trip transformation.
+		assert.Equal(t, message.RequestID, res.RequestID, "Expected the RequestID to match the original message")
+		// Verify that the subject of the re-encoded Message matches the original custom Message.
+		// This ensures that the subject field remains consistent after the transformation.
+		assert.Equal(t, message.Subject, res.Subject, "Expected the Subject to match the original message")
+		// Verify that the container of the re-encoded Message matches the original custom Message.
+		// This validates that the container data is preserved during encoding and decoding.
+		assert.Equal(t, message.Container, res.Container, "Expected the Container to match the original message")
+		// Verify that the header of the re-encoded Message matches the original custom Message.
+		// This confirms that the header field is not altered during the encoding and decoding processes.
+		assert.Equal(t, message.Header, res.Header, "Expected the Header to match the original message")
 	})
 
 	// EmptyMessage tests the behavior of the Encoder method when it is called with a nil message.
