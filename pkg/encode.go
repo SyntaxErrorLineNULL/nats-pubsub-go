@@ -64,7 +64,7 @@ func (Encoding) Decode(msg *Message) (*nats.Msg, error) {
 // It abstracts the process of converting NATS-level message representations
 // into application-specific Message structures to support interoperability.
 type Encoder interface {
-	// Encoder is responsible for transforming a NATS message into a custom Message.
+	// Encode is responsible for transforming a NATS message into a custom Message.
 	// The resulting custom Message contains data and metadata extracted from the NATS message,
 	// formatted for use within the application's messaging system.
 	// Returns the custom Message if successful or an error if the transformation fails.
@@ -106,8 +106,14 @@ func (Encoding) Encode(msg *nats.Msg) (*Message, error) {
 		return nil, err
 	}
 
-	// Constructs a new custom Message using the decoded data and the header from the NATS message.
-	// The NewMessage function ensures that the Message is initialized with all required fields,
-	// including RequestID, Container, and Header.
+	// Associates the original NATS message with the newly decoded custom Message.
+	// This linkage allows the application to reference the original NATS message
+	// when working with the custom Message structure.
+	message.message = msg
+
+	// Constructs and returns a pointer to the custom Message populated with the decoded data.
+	// The NewMessage function ensures all fields, such as RequestID, Container, and Header,
+	// are initialized correctly. This completes the transformation of the NATS message into
+	// the custom Message format required by the application.
 	return &message, nil
 }
