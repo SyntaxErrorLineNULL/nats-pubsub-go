@@ -55,18 +55,15 @@ type Message struct {
 	// once is used to ensure certain operations are performed only once.
 	// It uses sync.Once to guarantee that specific actions, such as closing
 	// the channel and unsubscribing, are executed only a single time.
-	once sync.Once
+	once *sync.Once
 
 	// parentCtx is the context associated with the message's parent operation.
 	// It provides a way to propagate cancellation, timeouts, or deadlines across operations.
 	parentCtx context.Context
 }
 
-// NewMessage is a constructor function for creating a new instance of the Message structure.
-// It initializes a Message object with the provided request ID, container, and header.
-// This function simplifies the creation of Message instances by encapsulating the initialization logic.
-func NewMessage(reqID string, container Container, header Header) *Message {
-	return &Message{RequestID: reqID, Container: container, Header: header}
+func NewMessage(parentCtx context.Context) *Message {
+	return &Message{parentCtx: parentCtx, once: new(sync.Once)}
 }
 
 // Validate checks the integrity and validity of a Message object.
