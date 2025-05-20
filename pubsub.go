@@ -1,9 +1,28 @@
 package nats_pubsub_go
 
 import (
+	"context"
+	"errors"
 	"time"
 
 	"github.com/nats-io/nats.go"
+)
+
+var (
+	// ErrInvalidArgument is an error returned when an invalid argument is provided.
+	// This is used to indicate that a function or method has been called with
+	// arguments that do not meet the required criteria or format.
+	ErrInvalidArgument = errors.New("invalid argument")
+
+	// ErrCloseConnection is an error returned when an operation is attempted
+	// on a closed connection. It signifies that the connection has been
+	// terminated and cannot be used for further operations.
+	ErrCloseConnection = errors.New("connection is close")
+
+	// ErrConnectionAlreadyClosed indicates that a connection closure was attempted on an already closed connection.
+	// This error helps differentiate between the connection being in a valid state versus being redundantly closed.
+	// By defining this error, the code provides a specific signal to handle such redundant closure attempts gracefully.
+	ErrConnectionAlreadyClosed = errors.New("connection is already closed")
 )
 
 // Publisher defines the interface for a publisher that can send messages,
@@ -28,51 +47,42 @@ type Publisher interface {
 	Close()
 }
 
-// Subscriber defines an interface for managing various types of subscriptions to NATS subjects.
-// It supports both synchronous and asynchronous subscriptions, with or without queue groups,
-// allowing for flexible message handling strategies.
+// Subscriber defines the interface for managing message subscriptions.
+// It provides methods to subscribe to specific subjects and queues, ensuring proper lifecycle management,
+// error handling, and asynchronous message processing. This interface abstracts the implementation details,
+// enabling flexibility and easier testing of components that rely on subscriptions.
 type Subscriber interface {
-	// AsyncSubscribe creates an asynchronous subscription to a specified subject.
-	// This method sets up a subscription that does not block the caller; instead, it allows
-	// the caller to continue processing while messages are received in the background.
-	// It returns a MessageHandler for managing the subscription and receiving messages, and
-	// an error if there was an issue creating the subscription.
-	AsyncSubscribe(subject string) (MessageHandler, error)
-
-	// SyncSubscribe creates a synchronous subscription to a specified subject.
-	// This method sets up a blocking subscription that will wait until a message is received.
-	// The caller will be blocked until a message arrives or an error occurs.
-	// It returns a MessageHandler for managing the subscription and receiving messages, and
-	// an error if there was an issue creating the subscription.
-	SyncSubscribe(subject string) (MessageHandler, error)
-
-	// AsyncQueueSubscribe creates an asynchronous subscription to a specified subject and queue group.
-	// Messages published to the subject will be distributed among the members of the queue group
-	// in a round-robin fashion, providing load balancing for message processing.
-	// This method sets up the subscription to listen for messages in a non-blocking manner.
-	// It returns a MessageHandler for managing the subscription and receiving messages, and
-	// an error if there was an issue creating the subscription.
-	AsyncQueueSubscribe(subject, queue string) (MessageHandler, error)
-
-	// SyncQueueSubscribe creates a synchronous subscription to a specified subject and queue group.
-	// This method sets up a blocking subscription where messages are distributed among the queue
-	// group members, with the caller being blocked until a message is received or an error occurs.
-	// It returns a MessageHandler for managing the subscription and receiving messages, and
-	// an error if there was an issue creating the subscription.
-	SyncQueueSubscribe(subject, queue string) (MessageHandler, error)
+	// Subscriber creates a subscription to a specified subject and queue using a context for lifecycle control.
+	// The method validates input parameters, initializes the subscription, and returns a MessageHandler for
+	// message processing. It ensures proper cleanup and resource management when the context is canceled or errors occur.
+	//
+	// Parameters:
+	//
+	// - ctx: The context used to manage the subscription lifecycle, including cancellation signals.
+	//
+	// - subject: The subject to subscribe to, which acts as the topic for message delivery.
+	//
+	// - queue: Optional. The queue group for the subscription, enabling message load balancing among subscribers.
+	//
+	// Returns:
+	//
+	// - MessageHandlerInterface: An abstraction for handling the subscription and processing messages.
+	//
+	// - error: An error object if the subscription fails, such as due to invalid arguments or connection issues.
+	Subscriber(ctx context.Context, subject, queue string) (MessageHandlerInterface, error)
 }
 
-// MessageHandler defines methods for handling and managing messages from a subscription.
+// MessageHandlerInterface defines methods for handling and managing messages from a subscription.
 // It provides functionality to receive messages, manage subscription lifecycle, and interact
 // with the message channel.
-type MessageHandler interface {
+type MessageHandlerInterface interface {
 	// Unsubscribe stops receiving messages from the subscription and closes the connection
 	// to the NATS server for this subscription. This method ensures that resources associated
 	// with the subscription are properly released. It returns an error if there was an issue
 	// during the unsubscription process.
 	Unsubscribe() error
 
-	// ReceiveMessage waits for a message to arrive on the subscription channel within the
+	// ReceiveMessage waits for a message to arrive at the subscription channel within the
 	// specified timeout period. If a message arrives within the timeout, it is returned
 	// along with any error that occurred. If the timeout elapses without receiving a message,
 	// this method will return an error indicating a timeout.
