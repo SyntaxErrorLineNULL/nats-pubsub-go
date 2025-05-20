@@ -1,0 +1,13 @@
+quiet: false
+disable-version-string: true
+mockname: "{{.InterfaceName}}"
+filename: "{{.MockName}}.go"
+outpkg: "{{.PackageName}}"
+with-expecter: true
+packages:
+  github.com/SyntaxErrorLineNULL/nats-pubsub-go:
+    config:
+      dir: "mock"
+    interfaces:
+      Publisher:
+      Subscriber:
