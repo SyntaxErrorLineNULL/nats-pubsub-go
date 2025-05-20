@@ -13,28 +13,17 @@ lint: ## Run linter
 test: ## Run tests
 	go test -v ./...
 
-# Target: generate
-# Description: Generate code, particularly mocks using mockery.
-# If mockery is not installed, this will install it first, and then run go generate.
-generate: ## Generate mocks
-# Check if mockery is installed. If not, install it.
-ifeq (, $(shell which mockery))
-	go install github.com/vektra/mockery/v2@v2.44.2
-endif
-	# Run go generate to trigger code generation in the project.
-	go generate ./...
-
-# Target: semver-cli
-# Description: Ensure semver-cli is installed. If not, it will install it.
-semver-cli:
-ifeq (, $(shell which semver-cli))
-	@printf "\033[36m%s\033[0m\n" "Installing semvercli..."
-	go install github.com/jfwenisch/semver-cli@latest
-endif
-
 # Target: bump
 # Description: Bump version, generate git tag, and push it to the repository.
 bump: semver-cli ## Bump version, generate git tag and push it to repository
 	@printf "\033[36m%s\033[0m\n" "Bumping version..."
 	@git fetch --all --tags
 	@semver-cli tags bump -t patch -p v
+
+# Target: mocks
+# Purpose: Regenerates mocks for interfaces in the project using mockery. Installs mockery if not already available.
+mocks: ## Generate mocks
+ifeq (, $(shell which mockery))
+	go install github.com/vektra/mockery/v2@latest
+endif
+	mockery
