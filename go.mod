@@ -1,6 +1,6 @@
 module github.com/SyntaxErrorLineNULL/nats-pubsub-go
 
-go 1.22.0
+go 1.24.1
 
 require (
 	github.com/nats-io/gnatsd v1.4.1
