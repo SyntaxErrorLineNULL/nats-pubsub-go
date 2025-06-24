@@ -7,7 +7,8 @@ with-expecter: true
 packages:
   github.com/SyntaxErrorLineNULL/nats-pubsub-go:
     config:
-      dir: "mock"
+      dir: "mocks/"
+      outpkg: "mocks"
     interfaces:
       Publisher:
       Subscriber:
