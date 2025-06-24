@@ -1,92 +1,124 @@
+version: "2"
+run:
+  concurrency: 4
+  modules-download-mode: readonly
+  issues-exit-code: 1
+  tests: false
+  allow-parallel-runners: false
 linters:
-  # Set to true runs only fast linters.
-  # Good option for 'lint on save', pre-commit hook or CI.
-  fast: false
-  disable-all: true
   enable:
-    - revive
-    - megacheck
-    # Vet examines Go source code and reports suspicious constructs,
-    # such as Printf calls whose arguments do not align with the format string.
-    - govet
-    - unconvert
-    - gas
-    # Computes and checks the cyclomatic complexity of functions.
-    - gocyclo
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - copyloopvar
     - dupl
-    - misspell
-    - unparam
-    - unused
-    - typecheck
-    - ineffassign
-    # Checks for pointers to enclosing loop variables.
-    - exportloopref
-    # Provides diagnostics that check for bugs, performance and style issues.
+    - durationcheck
+    - errname
+    - errorlint
     - gocritic
+    - gocyclo
+    - gosec
+    - misspell
     - nakedret
-    # Linter for Go source code that specializes in simplifying code.
-    - gosimple
-    # Finds slice declarations that could potentially be pre-allocated.
+    - nilerr
+    - nilnil
+    - noctx
     - prealloc
-
-# golangci-lint configuration file
-linters-settings:
-  revive:
-    ignore-generated-header: true
-    severity: warning
+    - reassign
+    - revive
+    - staticcheck
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - wastedassign
+  settings:
+    copyloopvar:
+      check-alias: true
+    dupl:
+      threshold: 300
+    errcheck:
+      check-type-assertions: false
+      exclude-functions:
+        - io/ioutil.ReadFile
+        - io.Copy(*bytes.Buffer)
+        - io.Copy(os.Stdout)
+    gocritic:
+      disabled-checks:
+        - hugeParam
+        - rangeExprCopy
+        - rangeValCopy
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+    gosec:
+      excludes:
+        - G114
+        - G115
+        - G301
+        - G204
+    misspell:
+      locale: US
+    revive:
+      confidence: 0.8
+      severity: warning
+      rules:
+        - name: exported
+          disabled: true
+        - name: package-comments
+          severity: warning
+          disabled: true
+        - name: exported
+          arguments:
+            - checkPrivateReceivers
+            - disableStutteringCheck
+          severity: warning
+          disabled: false
+  exclusions:
+    generated: lax
     rules:
-      - name: package-comments
-        severity: warning
-        disabled: true
-      - name: exported
-        severity: warning
-        disabled: false
-        arguments: ["checkPrivateReceivers", "disableStutteringCheck"]
-
-  errcheck:
-    # Report `a := b.(MyStruct)` when `a, ok := ...` should be.
-    check-type-assertions: true # Default: false
-
-    ## Report skipped checks:`num, _ := strconv.Atoi(numStr)`.
-    #check-blank: true # Default: false
-
-    # Function to skip.
-    #exclude-functions:
-
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      # These 3 will detect many cases, but they do sense
-      # if it's performance oriented code
-      - hugeParam
-      - rangeExprCopy
-      - rangeValCopy
-
-  goimports:
-    local-prefixes: github.com/SyntaxErrorLineNULL/nats-pubsub-go
-
+      - linters:
+          - staticcheck
+        text: at least one file in a package should have a package comment
+      - linters:
+          - dupl
+          - gosec
+        path: _test\.go
+    paths:
+      - vendor
+      - test
+      - e2e
+      - mocks
+      - docker
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  # Setting 0 to have all the results.
   max-issues-per-linter: 0
-
-  # Same here, nothing should be skipped to not miss errors.
   max-same-issues: 0
-
-  # When set to `true` linter will analyze only new code which are
-  # not committed or after some specific revision. This is a cool
-  # feature when you're going to introduce linter into a big project.
-  # So, it's set to `false` to scan all code.
+  uniq-by-line: false
   new: false
-
-  # Never fix anything, just report.
   fix: false
-  exclude-use-default: false
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - dupl
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/SyntaxErrorLineNULL/nats-pubsub-go
+  exclusions:
+    generated: lax
+    paths:
+      - vendor
+      - test
+      - e2e
+      - mocks
+      - docker
+      - third_party$
+      - builtin$
+      - examples$
